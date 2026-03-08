@@ -1,0 +1,90 @@
+{
+  "folders": [
+    { "path": "." }
+  ],
+  "settings": {
+    "python.defaultInterpreterPath": "./venv/bin/python",
+    "python.terminal.activateEnvironment": true,
+    "editor.formatOnSave": true,
+    "editor.defaultFormatter": "esbenp.prettier-vscode",
+    "[python]": { "editor.defaultFormatter": "ms-python.black-formatter" },
+    "files.associations": { "*.env*": "dotenv" },
+    "terminal.integrated.defaultProfile.linux": "bash",
+    "terminal.integrated.defaultProfile.osx": "zsh"
+  },
+  "extensions": {
+    "recommendations": [
+      "ms-python.python",
+      "ms-python.black-formatter",
+      "ms-python.pylint",
+      "bradlc.vscode-tailwindcss",
+      "esbenp.prettier-vscode",
+      "dbaeumer.vscode-eslint",
+      "ms-playwright.playwright",
+      "mikestead.dotenv",
+      "humao.rest-client"
+    ]
+  },
+  "launch": {
+    "version": "0.2.0",
+    "configurations": [
+      {
+        "name": "Start AI Core (port 8000)",
+        "type": "python",
+        "request": "launch",
+        "module": "uvicorn",
+        "args": ["backend.ai_core.main:app", "--reload", "--port", "8000"],
+        "cwd": "${workspaceFolder}",
+        "envFile": "${workspaceFolder}/.env"
+      },
+      {
+        "name": "Sigma CLI — Status",
+        "type": "python",
+        "request": "launch",
+        "program": "${workspaceFolder}/cli/sigma_cli.py",
+        "args": ["status"],
+        "envFile": "${workspaceFolder}/.env"
+      },
+      {
+        "name": "Run Playwright Tests",
+        "type": "python",
+        "request": "launch",
+        "module": "pytest",
+        "args": ["tests/", "-v", "--headed"],
+        "cwd": "${workspaceFolder}",
+        "envFile": "${workspaceFolder}/.env"
+      }
+    ]
+  },
+  "tasks": {
+    "version": "2.0.0",
+    "tasks": [
+      {
+        "label": "Setup Sigma",
+        "type": "shell",
+        "command": "chmod +x scripts/setup.sh && ./scripts/setup.sh",
+        "group": "build",
+        "presentation": { "reveal": "always", "panel": "new" }
+      },
+      {
+        "label": "Start All Services",
+        "type": "shell",
+        "command": "./scripts/start.sh",
+        "group": "none",
+        "presentation": { "reveal": "always", "panel": "new" }
+      },
+      {
+        "label": "Open Dashboard",
+        "type": "shell",
+        "command": "open dashboard.html || xdg-open dashboard.html || start dashboard.html",
+        "group": "none"
+      },
+      {
+        "label": "Install Python deps",
+        "type": "shell",
+        "command": "source venv/bin/activate && pip install -r backend/requirements.txt",
+        "group": "build"
+      }
+    ]
+  }
+}

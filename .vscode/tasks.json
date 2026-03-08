@@ -1,0 +1,61 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "⚡ Setup Sigma",
+      "type": "shell",
+      "command": "chmod +x scripts/setup.sh && ./scripts/setup.sh",
+      "group": "build",
+      "presentation": { "reveal": "always", "panel": "new" }
+    },
+    {
+      "label": "▶ Start Backend API",
+      "type": "shell",
+      "command": "source venv/bin/activate && cd backend && uvicorn main:app --reload --port 8000",
+      "group": "test",
+      "isBackground": true,
+      "presentation": { "reveal": "always", "panel": "new" }
+    },
+    {
+      "label": "🌐 Open Dashboard",
+      "type": "shell",
+      "command": "${input:openBrowser}",
+      "presentation": { "reveal": "silent" }
+    },
+    {
+      "label": "🤖 Sigma CLI Status",
+      "type": "shell",
+      "command": "source venv/bin/activate && python cli/sigma_cli.py status",
+      "group": "test",
+      "presentation": { "reveal": "always", "panel": "shared" }
+    },
+    {
+      "label": "🔥 Scan for Bugs",
+      "type": "shell",
+      "command": "source venv/bin/activate && python cli/sigma_cli.py scan --url ${input:scanUrl}",
+      "group": "test",
+      "presentation": { "reveal": "always", "panel": "shared" }
+    },
+    {
+      "label": "🧪 Generate Tests",
+      "type": "shell",
+      "command": "source venv/bin/activate && python cli/sigma_cli.py generate --url ${input:testUrl}",
+      "group": "test",
+      "presentation": { "reveal": "always", "panel": "shared" }
+    }
+  ],
+  "inputs": [
+    {
+      "id": "scanUrl",
+      "type": "promptString",
+      "description": "URL to scan for bugs",
+      "default": "https://example.com"
+    },
+    {
+      "id": "testUrl",
+      "type": "promptString",
+      "description": "URL to generate tests for",
+      "default": "https://example.com"
+    }
+  ]
+}

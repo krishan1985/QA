@@ -1,0 +1,34 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "⚡ Sigma Backend (FastAPI)",
+      "type": "debugpy",
+      "request": "launch",
+      "program": "-m",
+      "args": ["uvicorn", "main:app", "--reload", "--port", "8000"],
+      "cwd": "${workspaceFolder}/backend",
+      "envFile": "${workspaceFolder}/.env",
+      "console": "integratedTerminal"
+    },
+    {
+      "name": "🤖 Sigma CLI",
+      "type": "debugpy",
+      "request": "launch",
+      "program": "${workspaceFolder}/cli/sigma_cli.py",
+      "args": ["status"],
+      "envFile": "${workspaceFolder}/.env",
+      "console": "integratedTerminal"
+    },
+    {
+      "name": "🧪 Run Playwright Tests",
+      "type": "debugpy",
+      "request": "launch",
+      "program": "-m",
+      "args": ["pytest", "tests/", "-v", "--browser", "chromium"],
+      "cwd": "${workspaceFolder}",
+      "envFile": "${workspaceFolder}/.env",
+      "console": "integratedTerminal"
+    }
+  ]
+}

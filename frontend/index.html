@@ -1,0 +1,1960 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>SIGMA — AI Testing Agent</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=JetBrains+Mono:wght@300;400;500;700&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet"/>
+<style>
+:root {
+  --bg: #040507;
+  --surface: #0a0c10;
+  --surface2: #0f1117;
+  --surface3: #151820;
+  --border: rgba(255,255,255,0.07);
+  --border-bright: rgba(255,255,255,0.14);
+  --acid: #00ff88;
+  --acid2: #00d4ff;
+  --acid3: #ff3d71;
+  --acid4: #ffaa00;
+  --acid5: #bf5af2;
+  --text: #e8eaf0;
+  --text2: #8892a4;
+  --text3: #4a5568;
+  --red: #ff3d71;
+  --yellow: #ffaa00;
+  --green: #00ff88;
+  --blue: #00d4ff;
+  --purple: #bf5af2;
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+html{scroll-behavior:smooth;}
+body{
+  font-family:'Inter',sans-serif;
+  background:var(--bg);
+  color:var(--text);
+  min-height:100vh;
+  overflow-x:hidden;
+}
+
+/* ── SCROLLBAR ── */
+::-webkit-scrollbar{width:4px;height:4px;}
+::-webkit-scrollbar-track{background:var(--surface);}
+::-webkit-scrollbar-thumb{background:var(--acid);border-radius:2px;}
+
+/* ── NOISE OVERLAY ── */
+body::before{
+  content:'';
+  position:fixed;inset:0;
+  background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.03'/%3E%3C/svg%3E");
+  pointer-events:none;z-index:9999;opacity:0.4;
+}
+
+/* ══════════════════ HEADER ══════════════════ */
+.header{
+  position:fixed;top:0;left:0;right:0;z-index:100;
+  background:rgba(4,5,7,0.92);
+  backdrop-filter:blur(24px);
+  border-bottom:1px solid var(--border);
+  padding:0 24px;
+  height:64px;
+  display:flex;align-items:center;gap:16px;
+}
+.logo{
+  display:flex;align-items:center;gap:10px;flex-shrink:0;
+  text-decoration:none;
+}
+.logo-icon{
+  width:38px;height:38px;
+  background:linear-gradient(135deg,var(--acid),var(--acid2));
+  border-radius:10px;
+  display:flex;align-items:center;justify-content:center;
+  font-family:'Syne',sans-serif;font-weight:800;font-size:18px;color:#000;
+  box-shadow:0 0 20px rgba(0,255,136,0.4);
+  position:relative;
+}
+.logo-icon::after{
+  content:'';
+  position:absolute;inset:-2px;
+  border-radius:12px;
+  background:linear-gradient(135deg,var(--acid),var(--acid2));
+  z-index:-1;opacity:0.3;filter:blur(6px);
+}
+.logo-text{
+  font-family:'Syne',sans-serif;font-weight:800;font-size:15px;
+  letter-spacing:0.05em;
+  background:linear-gradient(90deg,#fff 0%,var(--acid) 100%);
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;
+}
+.logo-sub{font-size:9px;letter-spacing:0.2em;color:var(--text3);font-weight:500;text-transform:uppercase;margin-top:-2px;}
+
+.search-bar{
+  flex:1;max-width:400px;
+  position:relative;
+}
+.search-bar input{
+  width:100%;height:36px;
+  background:var(--surface3);
+  border:1px solid var(--border);
+  border-radius:8px;
+  padding:0 40px 0 36px;
+  font-size:13px;color:var(--text);font-family:'Inter',sans-serif;
+  outline:none;
+  transition:border-color 0.2s,box-shadow 0.2s;
+}
+.search-bar input:focus{border-color:var(--acid);box-shadow:0 0 0 3px rgba(0,255,136,0.1);}
+.search-bar input::placeholder{color:var(--text3);}
+.search-icon{position:absolute;left:10px;top:50%;transform:translateY(-50%);color:var(--text3);font-size:14px;}
+.search-kbd{
+  position:absolute;right:8px;top:50%;transform:translateY(-50%);
+  font-size:10px;color:var(--text3);
+  background:var(--surface2);border:1px solid var(--border);
+  border-radius:4px;padding:1px 5px;font-family:'JetBrains Mono',monospace;
+}
+
+.header-right{display:flex;align-items:center;gap:10px;margin-left:auto;}
+
+.timestamp{
+  font-family:'JetBrains Mono',monospace;font-size:11px;
+  color:var(--acid);letter-spacing:0.05em;
+  background:rgba(0,255,136,0.06);
+  border:1px solid rgba(0,255,136,0.15);
+  border-radius:6px;padding:4px 10px;white-space:nowrap;
+}
+
+.social-links{display:flex;gap:6px;}
+.social-btn{
+  width:30px;height:30px;
+  background:var(--surface3);border:1px solid var(--border);
+  border-radius:6px;display:flex;align-items:center;justify-content:center;
+  cursor:pointer;transition:all 0.2s;font-size:13px;text-decoration:none;color:var(--text2);
+}
+.social-btn:hover{border-color:var(--acid);color:var(--acid);background:rgba(0,255,136,0.06);}
+
+.badge-pro{
+  font-size:9px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;
+  background:linear-gradient(90deg,var(--acid4),var(--acid3));
+  color:#000;border-radius:4px;padding:3px 8px;
+}
+
+.notif-btn{
+  width:34px;height:34px;
+  background:var(--surface3);border:1px solid var(--border);
+  border-radius:8px;display:flex;align-items:center;justify-content:center;
+  cursor:pointer;position:relative;transition:all 0.2s;
+}
+.notif-btn:hover{border-color:var(--acid2);color:var(--acid2);}
+.notif-dot{
+  position:absolute;top:6px;right:6px;
+  width:7px;height:7px;background:var(--red);border-radius:50%;
+  border:1.5px solid var(--bg);
+  animation:pulse 2s infinite;
+}
+@keyframes pulse{0%,100%{box-shadow:0 0 0 0 rgba(255,61,113,0.4);}50%{box-shadow:0 0 0 5px rgba(255,61,113,0);}}
+
+.subscribe-btn{
+  height:34px;padding:0 14px;
+  background:linear-gradient(90deg,var(--acid),var(--acid2));
+  border:none;border-radius:8px;
+  font-size:12px;font-weight:600;color:#000;cursor:pointer;
+  transition:all 0.2s;white-space:nowrap;font-family:'Inter',sans-serif;
+}
+.subscribe-btn:hover{filter:brightness(1.1);transform:translateY(-1px);}
+
+.signin-btn{
+  height:34px;padding:0 14px;
+  background:var(--surface3);border:1px solid var(--border);
+  border-radius:8px;font-size:12px;font-weight:500;color:var(--text);
+  cursor:pointer;transition:all 0.2s;white-space:nowrap;font-family:'Inter',sans-serif;
+}
+.signin-btn:hover{border-color:var(--acid);color:var(--acid);}
+
+/* ══════════════════ LAYOUT ══════════════════ */
+.app{display:flex;padding-top:64px;min-height:100vh;}
+
+/* ── SIDEBAR ── */
+.sidebar{
+  width:220px;flex-shrink:0;
+  background:var(--surface);
+  border-right:1px solid var(--border);
+  position:fixed;top:64px;bottom:0;left:0;
+  overflow-y:auto;padding:16px 0;
+  z-index:50;
+}
+.nav-section{margin-bottom:8px;}
+.nav-label{
+  font-size:9px;font-weight:600;letter-spacing:0.15em;text-transform:uppercase;
+  color:var(--text3);padding:8px 20px 4px;
+}
+.nav-item{
+  display:flex;align-items:center;gap:10px;
+  padding:9px 20px;cursor:pointer;
+  font-size:13px;font-weight:500;color:var(--text2);
+  transition:all 0.15s;border-left:2px solid transparent;
+  position:relative;
+}
+.nav-item:hover{color:var(--text);background:rgba(255,255,255,0.03);}
+.nav-item.active{
+  color:var(--acid);background:rgba(0,255,136,0.05);
+  border-left-color:var(--acid);
+}
+.nav-item .icon{font-size:15px;width:18px;text-align:center;}
+.nav-badge{
+  margin-left:auto;
+  font-size:9px;font-weight:700;
+  background:var(--red);color:#fff;
+  border-radius:10px;padding:1px 6px;
+}
+.nav-badge.green{background:rgba(0,255,136,0.2);color:var(--acid);}
+
+/* ── MAIN CONTENT ── */
+.main{
+  margin-left:220px;flex:1;
+  padding:24px;min-height:calc(100vh - 64px);
+}
+
+/* ══════════════════ PAGE HEADER ══════════════════ */
+.page-header{
+  display:flex;align-items:center;justify-content:space-between;
+  margin-bottom:24px;
+}
+.page-title{
+  font-family:'Syne',sans-serif;font-size:22px;font-weight:700;
+}
+.page-subtitle{font-size:12px;color:var(--text3);margin-top:2px;}
+
+/* ══════════════════ METRICS GRID ══════════════════ */
+.metrics-grid{
+  display:grid;grid-template-columns:repeat(5,1fr);
+  gap:14px;margin-bottom:24px;
+}
+.metric-card{
+  background:var(--surface);border:1px solid var(--border);
+  border-radius:12px;padding:16px;
+  position:relative;overflow:hidden;
+  transition:border-color 0.2s,transform 0.2s;cursor:default;
+}
+.metric-card:hover{transform:translateY(-2px);}
+.metric-card::before{
+  content:'';position:absolute;inset:0;
+  background:linear-gradient(135deg,var(--color) 0%,transparent 60%);
+  opacity:0.04;
+}
+.metric-card[data-color="green"]{--color:var(--green);}
+.metric-card[data-color="blue"]{--color:var(--blue);}
+.metric-card[data-color="red"]{--color:var(--red);}
+.metric-card[data-color="yellow"]{--color:var(--yellow);}
+.metric-card[data-color="purple"]{--color:var(--purple);}
+.metric-card:hover{border-color:var(--color);}
+.metric-icon{
+  width:34px;height:34px;border-radius:8px;
+  background:rgba(255,255,255,0.05);
+  display:flex;align-items:center;justify-content:center;
+  font-size:16px;margin-bottom:10px;
+}
+.metric-val{
+  font-family:'Syne',sans-serif;font-size:26px;font-weight:800;
+  color:var(--color);line-height:1;margin-bottom:4px;
+}
+.metric-label{font-size:11px;color:var(--text3);font-weight:500;text-transform:uppercase;letter-spacing:0.05em;}
+.metric-change{
+  font-size:11px;font-weight:600;margin-top:6px;
+  display:flex;align-items:center;gap:3px;
+}
+.metric-change.up{color:var(--green);}
+.metric-change.down{color:var(--red);}
+
+/* ══════════════════ GRID LAYOUTS ══════════════════ */
+.grid-2{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px;}
+.grid-3{display:grid;grid-template-columns:2fr 1fr 1fr;gap:16px;margin-bottom:16px;}
+.grid-agent{display:grid;grid-template-columns:repeat(5,1fr);gap:14px;margin-bottom:24px;}
+
+/* ══════════════════ CARDS ══════════════════ */
+.card{
+  background:var(--surface);border:1px solid var(--border);
+  border-radius:12px;padding:18px;
+  transition:border-color 0.2s;
+}
+.card-header{
+  display:flex;align-items:center;justify-content:space-between;
+  margin-bottom:16px;
+}
+.card-title{font-size:13px;font-weight:600;color:var(--text);}
+.card-badge{
+  font-size:10px;font-weight:600;
+  border-radius:20px;padding:3px 9px;letter-spacing:0.05em;text-transform:uppercase;
+}
+.card-badge.live{background:rgba(0,255,136,0.12);color:var(--green);border:1px solid rgba(0,255,136,0.2);}
+.card-badge.live::before{content:'● ';animation:blink 1.4s infinite;}
+@keyframes blink{0%,100%{opacity:1;}50%{opacity:0.2;};}
+
+/* ══════════════════ AGENT CARDS ══════════════════ */
+.agent-card{
+  background:var(--surface);border:1px solid var(--border);
+  border-radius:12px;padding:16px;text-align:center;
+  transition:all 0.3s;cursor:pointer;
+  position:relative;overflow:hidden;
+}
+.agent-card:hover{transform:translateY(-3px);border-color:var(--a-color);}
+.agent-card::after{
+  content:'';position:absolute;bottom:0;left:0;right:0;
+  height:2px;background:var(--a-color);
+  transform:scaleX(0);transition:transform 0.3s;
+}
+.agent-card:hover::after{transform:scaleX(1);}
+.agent-avatar{
+  width:48px;height:48px;border-radius:12px;
+  background:rgba(255,255,255,0.05);
+  border:1px solid var(--border);
+  margin:0 auto 10px;
+  display:flex;align-items:center;justify-content:center;
+  font-size:22px;position:relative;
+}
+.agent-status{
+  position:absolute;bottom:-2px;right:-2px;
+  width:12px;height:12px;border-radius:50%;
+  border:2px solid var(--surface);
+}
+.agent-status.online{background:var(--green);box-shadow:0 0 6px var(--green);}
+.agent-status.busy{background:var(--yellow);box-shadow:0 0 6px var(--yellow);}
+.agent-name{font-size:12px;font-weight:600;margin-bottom:3px;}
+.agent-role{font-size:10px;color:var(--text3);}
+.agent-stat{
+  font-family:'JetBrains Mono',monospace;
+  font-size:18px;font-weight:700;color:var(--a-color);
+  margin-top:8px;
+}
+
+/* ══════════════════ TABLE ══════════════════ */
+.table{width:100%;border-collapse:collapse;}
+.table th{
+  font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:0.1em;
+  color:var(--text3);padding:8px 12px;
+  border-bottom:1px solid var(--border);text-align:left;
+}
+.table td{
+  padding:10px 12px;font-size:12px;
+  border-bottom:1px solid rgba(255,255,255,0.03);
+}
+.table tr:last-child td{border-bottom:none;}
+.table tr:hover td{background:rgba(255,255,255,0.02);}
+.status-pill{
+  display:inline-flex;align-items:center;gap:4px;
+  font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:0.05em;
+  padding:3px 9px;border-radius:20px;
+}
+.status-pill.pass{background:rgba(0,255,136,0.1);color:var(--green);}
+.status-pill.fail{background:rgba(255,61,113,0.1);color:var(--red);}
+.status-pill.run{background:rgba(0,212,255,0.1);color:var(--blue);}
+.status-pill.warn{background:rgba(255,170,0,0.1);color:var(--yellow);}
+
+/* ══════════════════ CHART BAR ══════════════════ */
+.mini-chart{display:flex;align-items:flex-end;gap:4px;height:50px;}
+.bar{
+  flex:1;border-radius:3px 3px 0 0;
+  background:linear-gradient(180deg,var(--bar-color),rgba(255,255,255,0.1));
+  min-height:4px;transition:opacity 0.2s;
+}
+.bar:hover{opacity:0.8;}
+
+/* ══════════════════ TABS ══════════════════ */
+.tabs{display:flex;gap:2px;background:var(--surface2);border-radius:8px;padding:3px;margin-bottom:16px;}
+.tab{
+  flex:1;padding:7px 12px;text-align:center;
+  font-size:12px;font-weight:500;
+  border-radius:6px;cursor:pointer;
+  transition:all 0.2s;color:var(--text3);
+}
+.tab.active{background:var(--surface3);color:var(--text);font-weight:600;}
+.tab:hover:not(.active){color:var(--text2);}
+
+/* ══════════════════ BUTTONS ══════════════════ */
+.btn{
+  height:34px;padding:0 16px;border-radius:8px;
+  font-size:12px;font-weight:600;cursor:pointer;
+  transition:all 0.2s;display:inline-flex;align-items:center;gap:6px;
+  border:none;font-family:'Inter',sans-serif;
+}
+.btn-primary{background:linear-gradient(90deg,var(--acid),var(--acid2));color:#000;}
+.btn-primary:hover{filter:brightness(1.1);transform:translateY(-1px);}
+.btn-danger{background:rgba(255,61,113,0.15);color:var(--red);border:1px solid rgba(255,61,113,0.3);}
+.btn-danger:hover{background:rgba(255,61,113,0.25);}
+.btn-ghost{background:var(--surface2);color:var(--text2);border:1px solid var(--border);}
+.btn-ghost:hover{border-color:var(--border-bright);color:var(--text);}
+.btn-sm{height:28px;padding:0 10px;font-size:11px;}
+
+/* ══════════════════ BUG SCANNER ══════════════════ */
+.scanner-input{
+  display:flex;gap:10px;margin-bottom:16px;
+}
+.scanner-input input,.scanner-input select{
+  flex:1;height:40px;
+  background:var(--surface2);border:1px solid var(--border);
+  border-radius:8px;padding:0 14px;
+  font-size:13px;color:var(--text);font-family:'Inter',sans-serif;
+  outline:none;transition:border-color 0.2s;
+}
+.scanner-input input:focus,.scanner-input select:focus{border-color:var(--acid);}
+.scanner-input select option{background:var(--surface2);}
+
+/* ══════════════════ TERMINAL ══════════════════ */
+.terminal{
+  background:#020304;border:1px solid rgba(0,255,136,0.15);
+  border-radius:10px;padding:14px;
+  font-family:'JetBrains Mono',monospace;font-size:11px;
+  height:200px;overflow-y:auto;
+  position:relative;
+}
+.terminal::before{
+  content:'SIGMA TERMINAL';
+  position:absolute;top:8px;right:12px;
+  font-size:9px;color:rgba(0,255,136,0.3);letter-spacing:0.15em;
+}
+.t-line{margin-bottom:2px;line-height:1.6;}
+.t-prompt{color:var(--acid);}
+.t-cmd{color:#fff;}
+.t-out{color:var(--text2);}
+.t-err{color:var(--red);}
+.t-ok{color:var(--green);}
+.t-warn{color:var(--yellow);}
+.t-info{color:var(--blue);}
+.t-cursor{display:inline-block;width:8px;height:13px;background:var(--acid);animation:blink 1s infinite;vertical-align:text-bottom;}
+
+/* ══════════════════ BUG REPORT CARDS ══════════════════ */
+.bug-card{
+  background:var(--surface2);border-radius:10px;padding:14px;
+  border-left:3px solid var(--severity-color);
+  margin-bottom:10px;transition:all 0.2s;cursor:pointer;
+}
+.bug-card:hover{background:var(--surface3);}
+.bug-card[data-sev="critical"]{--severity-color:var(--red);}
+.bug-card[data-sev="high"]{--severity-color:var(--yellow);}
+.bug-card[data-sev="medium"]{--severity-color:var(--blue);}
+.bug-card[data-sev="low"]{--severity-color:var(--purple);}
+.bug-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;}
+.bug-id{font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--text3);}
+.bug-title{font-size:12px;font-weight:600;margin-bottom:4px;}
+.bug-meta{font-size:11px;color:var(--text3);}
+.sev-badge{
+  font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:0.1em;
+  padding:2px 7px;border-radius:4px;
+  background:rgba(255,255,255,0.06);color:var(--severity-color);
+}
+
+/* ══════════════════ PROGRESS BAR ══════════════════ */
+.progress-bar{
+  height:4px;background:var(--surface3);border-radius:2px;
+  overflow:hidden;margin-top:6px;
+}
+.progress-fill{
+  height:100%;border-radius:2px;
+  background:linear-gradient(90deg,var(--acid),var(--acid2));
+  transition:width 0.5s ease;
+}
+
+/* ══════════════════ PAGES ══════════════════ */
+.page{display:none;}
+.page.active{display:block;}
+
+/* ══════════════════ NETWORK MONITOR ══════════════════ */
+.network-log{
+  background:var(--surface2);border-radius:10px;
+  max-height:280px;overflow-y:auto;
+}
+.net-row{
+  display:grid;grid-template-columns:60px 50px 1fr 70px 70px 50px;
+  gap:8px;padding:7px 12px;font-size:11px;
+  border-bottom:1px solid rgba(255,255,255,0.03);
+  font-family:'JetBrains Mono',monospace;
+  cursor:pointer;transition:background 0.15s;
+  align-items:center;
+}
+.net-row:hover{background:rgba(255,255,255,0.02);}
+.net-row.header-row{color:var(--text3);font-size:10px;font-weight:600;letter-spacing:0.05em;text-transform:uppercase;}
+.method-pill{
+  font-size:9px;font-weight:700;padding:2px 5px;border-radius:3px;text-align:center;
+}
+.method-get{background:rgba(0,212,255,0.15);color:var(--blue);}
+.method-post{background:rgba(0,255,136,0.15);color:var(--green);}
+.method-del{background:rgba(255,61,113,0.15);color:var(--red);}
+.status-200{color:var(--green);}
+.status-4xx{color:var(--yellow);}
+.status-5xx{color:var(--red);}
+
+/* ══════════════════ SECURITY PANEL ══════════════════ */
+.vuln-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+.vuln-card{
+  background:var(--surface2);border-radius:10px;padding:14px;
+  border:1px solid var(--border);transition:all 0.2s;
+}
+.vuln-card:hover{border-color:var(--red);}
+.vuln-name{font-size:12px;font-weight:600;margin-bottom:4px;}
+.vuln-desc{font-size:11px;color:var(--text3);margin-bottom:8px;}
+.severity-bar{display:flex;gap:3px;}
+.s-dot{width:8px;height:8px;border-radius:50%;background:var(--surface3);}
+.s-dot.filled.critical{background:var(--red);}
+.s-dot.filled.high{background:var(--yellow);}
+.s-dot.filled.med{background:var(--blue);}
+
+/* ══════════════════ MODAL ══════════════════ */
+.modal-overlay{
+  display:none;
+  position:fixed;inset:0;
+  background:rgba(0,0,0,0.8);backdrop-filter:blur(8px);
+  z-index:200;align-items:center;justify-content:center;
+}
+.modal-overlay.open{display:flex;}
+.modal{
+  background:var(--surface2);border:1px solid var(--border-bright);
+  border-radius:16px;padding:28px;width:480px;max-width:90vw;
+}
+.modal h3{font-family:'Syne',sans-serif;font-size:20px;font-weight:700;margin-bottom:6px;}
+.modal p{font-size:13px;color:var(--text2);margin-bottom:20px;}
+.modal input{
+  width:100%;height:42px;
+  background:var(--surface3);border:1px solid var(--border);
+  border-radius:8px;padding:0 14px;font-size:13px;color:var(--text);
+  margin-bottom:14px;outline:none;font-family:'Inter',sans-serif;
+  transition:border-color 0.2s;
+}
+.modal input:focus{border-color:var(--acid);}
+.modal-close{
+  position:absolute;top:16px;right:16px;
+  width:28px;height:28px;background:var(--surface3);
+  border:none;border-radius:6px;color:var(--text2);
+  cursor:pointer;font-size:16px;display:flex;align-items:center;justify-content:center;
+}
+.modal{position:relative;}
+
+/* ══════════════════ AI CHAT ══════════════════ */
+.ai-chat{
+  position:fixed;bottom:24px;right:24px;z-index:90;
+}
+.chat-bubble{
+  width:52px;height:52px;
+  background:linear-gradient(135deg,var(--acid),var(--acid2));
+  border-radius:50%;display:flex;align-items:center;justify-content:center;
+  cursor:pointer;font-size:22px;
+  box-shadow:0 4px 24px rgba(0,255,136,0.4);
+  transition:transform 0.2s;
+}
+.chat-bubble:hover{transform:scale(1.1);}
+.chat-window{
+  position:absolute;bottom:64px;right:0;
+  width:320px;
+  background:var(--surface2);border:1px solid var(--border-bright);
+  border-radius:16px;
+  display:none;
+  flex-direction:column;
+  box-shadow:0 20px 60px rgba(0,0,0,0.5);
+  overflow:hidden;
+}
+.chat-window.open{display:flex;}
+.chat-header{
+  padding:14px 16px;background:var(--surface3);
+  border-bottom:1px solid var(--border);
+  display:flex;align-items:center;gap:10px;
+}
+.chat-messages{
+  height:240px;overflow-y:auto;padding:14px;
+  display:flex;flex-direction:column;gap:10px;
+}
+.chat-msg{
+  font-size:12px;line-height:1.5;
+  padding:9px 12px;border-radius:10px;max-width:85%;
+}
+.chat-msg.ai{background:var(--surface3);color:var(--text);align-self:flex-start;}
+.chat-msg.user{background:linear-gradient(90deg,var(--acid),var(--acid2));color:#000;align-self:flex-end;font-weight:500;}
+.chat-input-row{
+  display:flex;gap:8px;padding:12px;
+  border-top:1px solid var(--border);
+}
+.chat-input-row input{
+  flex:1;height:34px;background:var(--surface3);
+  border:1px solid var(--border);border-radius:8px;
+  padding:0 12px;font-size:12px;color:var(--text);
+  outline:none;font-family:'Inter',sans-serif;
+}
+.chat-input-row input:focus{border-color:var(--acid);}
+.chat-send{
+  width:34px;height:34px;
+  background:var(--acid);border:none;border-radius:8px;
+  color:#000;font-size:16px;cursor:pointer;
+  display:flex;align-items:center;justify-content:center;
+}
+
+/* ══════════════════ FOOTER ══════════════════ */
+.footer{
+  margin-left:220px;
+  background:var(--surface);
+  border-top:1px solid var(--border);
+  padding:40px 32px 24px;
+}
+.footer-grid{
+  display:grid;grid-template-columns:2fr 1fr 1fr 1fr 1fr;
+  gap:32px;margin-bottom:32px;
+}
+.footer-brand h3{
+  font-family:'Syne',sans-serif;font-size:18px;font-weight:800;
+  background:linear-gradient(90deg,#fff,var(--acid));
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;
+  margin-bottom:6px;
+}
+.footer-brand p{font-size:12px;color:var(--text3);line-height:1.7;margin-bottom:16px;max-width:220px;}
+.footer-social{display:flex;gap:8px;}
+.footer-col h4{font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:0.1em;color:var(--text2);margin-bottom:12px;}
+.footer-col a{
+  display:block;font-size:12px;color:var(--text3);
+  text-decoration:none;margin-bottom:8px;
+  transition:color 0.2s;
+}
+.footer-col a:hover{color:var(--acid);}
+.footer-bottom{
+  border-top:1px solid var(--border);padding-top:20px;
+  display:flex;align-items:center;justify-content:space-between;
+  flex-wrap:wrap;gap:12px;
+}
+.footer-bottom p{font-size:11px;color:var(--text3);}
+.footer-app-btns{display:flex;gap:8px;}
+.app-btn{
+  height:30px;padding:0 12px;
+  background:var(--surface2);border:1px solid var(--border);
+  border-radius:6px;font-size:10px;font-weight:500;color:var(--text2);
+  cursor:pointer;transition:all 0.2s;display:flex;align-items:center;gap:5px;
+}
+.app-btn:hover{border-color:var(--acid2);color:var(--acid2);}
+
+/* ══════════════════ SCAN ANIMATION ══════════════════ */
+.scan-line{
+  position:relative;overflow:hidden;border-radius:8px;
+  background:var(--surface2);height:4px;margin:8px 0;
+}
+.scan-line::after{
+  content:'';position:absolute;top:0;left:-100%;
+  width:100%;height:100%;
+  background:linear-gradient(90deg,transparent,var(--acid),transparent);
+  animation:scan 2s linear infinite;
+}
+@keyframes scan{0%{left:-100%;}100%{left:200%;}}
+
+/* ══════════════════ RESPONSIVE ══════════════════ */
+@media(max-width:1200px){
+  .metrics-grid{grid-template-columns:repeat(3,1fr);}
+  .grid-agent{grid-template-columns:repeat(3,1fr);}
+}
+@media(max-width:900px){
+  .sidebar{transform:translateX(-100%);}
+  .main,.footer{margin-left:0;}
+  .footer-grid{grid-template-columns:1fr 1fr;}
+}
+
+/* ══════════════════ GLOW EFFECTS ══════════════════ */
+.glow-green{box-shadow:0 0 20px rgba(0,255,136,0.15);}
+.glow-blue{box-shadow:0 0 20px rgba(0,212,255,0.15);}
+.glow-red{box-shadow:0 0 20px rgba(255,61,113,0.15);}
+
+/* ══════════════════ CRAWL TABLE ══════════════════ */
+.url-status{display:flex;gap:6px;flex-wrap:wrap;}
+.check-chip{
+  font-size:9px;font-weight:600;padding:2px 6px;border-radius:3px;
+  text-transform:uppercase;letter-spacing:0.05em;
+}
+.check-pass{background:rgba(0,255,136,0.1);color:var(--green);}
+.check-fail{background:rgba(255,61,113,0.1);color:var(--red);}
+.check-warn{background:rgba(255,170,0,0.1);color:var(--yellow);}
+
+/* Animations */
+@keyframes fadeIn{from{opacity:0;transform:translateY(8px);}to{opacity:1;transform:none;}}
+.page.active{animation:fadeIn 0.3s ease;}
+
+/* Code block */
+.code-block{
+  background:#020304;border:1px solid rgba(0,255,136,0.1);
+  border-radius:8px;padding:14px;
+  font-family:'JetBrains Mono',monospace;font-size:11px;
+  overflow-x:auto;line-height:1.7;
+  max-height:200px;overflow-y:auto;
+}
+.kw{color:#bf5af2;}
+.fn{color:#00d4ff;}
+.str{color:#ff9f0a;}
+.cm{color:#4a5568;}
+.num{color:#00ff88;}
+
+/* Selector grid */
+.selector-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-bottom:14px;}
+.sel-chip{
+  padding:6px 8px;background:var(--surface3);
+  border:1px solid var(--border);border-radius:6px;
+  font-size:10px;font-family:'JetBrains Mono',monospace;
+  cursor:pointer;transition:all 0.15s;text-align:center;color:var(--text2);
+}
+.sel-chip:hover,.sel-chip.selected{
+  background:rgba(0,255,136,0.08);
+  border-color:var(--acid);color:var(--acid);
+}
+
+/* Donut chart */
+.donut{position:relative;display:inline-block;}
+.donut-center{
+  position:absolute;top:50%;left:50%;
+  transform:translate(-50%,-50%);
+  text-align:center;
+}
+
+/* Tag */
+.tag{
+  display:inline-block;
+  font-size:10px;font-weight:500;
+  padding:2px 8px;border-radius:4px;
+  background:rgba(255,255,255,0.06);color:var(--text2);
+  margin:2px;
+}
+.tag.blue{background:rgba(0,212,255,0.1);color:var(--blue);}
+.tag.green{background:rgba(0,255,136,0.1);color:var(--green);}
+.tag.red{background:rgba(255,61,113,0.1);color:var(--red);}
+</style>
+</head>
+<body>
+
+<!-- ══════════════ HEADER ══════════════ -->
+<header class="header">
+  <a class="logo" onclick="navigate('dashboard')">
+    <div class="logo-icon">Σ</div>
+    <div>
+      <div class="logo-text">SIGMA</div>
+      <div class="logo-sub">Testing AI Agent</div>
+    </div>
+  </a>
+
+  <div class="search-bar">
+    <span class="search-icon">🔍</span>
+    <input type="text" placeholder="Search tests, URLs, reports, bugs…" id="globalSearch"/>
+    <span class="search-kbd">⌘K</span>
+  </div>
+
+  <div class="header-right">
+    <div class="timestamp" id="clock">⏱ IST 00:00:00</div>
+
+    <div class="social-links">
+      <a class="social-btn" title="Twitter/X">𝕏</a>
+      <a class="social-btn" title="GitHub">⌥</a>
+      <a class="social-btn" title="LinkedIn">in</a>
+      <a class="social-btn" title="Discord">◈</a>
+      <a class="social-btn" title="YouTube">▶</a>
+    </div>
+
+    <button class="subscribe-btn" onclick="openModal('subscribeModal')">✦ Subscribe</button>
+    <span class="badge-pro">PRO</span>
+
+    <div class="notif-btn" onclick="toggleNotif()">
+      🔔<span class="notif-dot"></span>
+    </div>
+
+    <button class="signin-btn" onclick="openModal('signinModal')">Sign In</button>
+  </div>
+</header>
+
+<!-- ══════════════ SIDEBAR ══════════════ -->
+<nav class="sidebar">
+  <div class="nav-section">
+    <div class="nav-label">Core</div>
+    <div class="nav-item active" onclick="navigate('dashboard')">
+      <span class="icon">⚡</span> Dashboard
+    </div>
+    <div class="nav-item" onclick="navigate('generator')">
+      <span class="icon">🤖</span> Test Generator
+    </div>
+    <div class="nav-item" onclick="navigate('crawler')">
+      <span class="icon">🕷</span> URL Crawler
+    </div>
+    <div class="nav-item" onclick="navigate('executor')">
+      <span class="icon">▶</span> Test Executor
+      <span class="nav-badge">3</span>
+    </div>
+  </div>
+
+  <div class="nav-section">
+    <div class="nav-label">Analysis</div>
+    <div class="nav-item" onclick="navigate('bugdetect')">
+      <span class="icon">🐛</span> Bug Detector
+      <span class="nav-badge">12</span>
+    </div>
+    <div class="nav-item" onclick="navigate('security')">
+      <span class="icon">🛡</span> Security Scanner
+    </div>
+    <div class="nav-item" onclick="navigate('network')">
+      <span class="icon">📡</span> Network Monitor
+    </div>
+    <div class="nav-item" onclick="navigate('visual')">
+      <span class="icon">👁</span> Visual Tester
+    </div>
+    <div class="nav-item" onclick="navigate('performance')">
+      <span class="icon">⚡</span> Performance
+    </div>
+  </div>
+
+  <div class="nav-section">
+    <div class="nav-label">AI Tools</div>
+    <div class="nav-item" onclick="navigate('healer')">
+      <span class="icon">🔧</span> Locator Healer
+    </div>
+    <div class="nav-item" onclick="navigate('debugger')">
+      <span class="icon">🔍</span> AI Debugger
+    </div>
+    <div class="nav-item" onclick="navigate('accessibility')">
+      <span class="icon">♿</span> Accessibility
+    </div>
+  </div>
+
+  <div class="nav-section">
+    <div class="nav-label">Management</div>
+    <div class="nav-item" onclick="navigate('reports')">
+      <span class="icon">📊</span> Reports
+    </div>
+    <div class="nav-item" onclick="navigate('scheduler')">
+      <span class="icon">📅</span> Scheduler
+    </div>
+    <div class="nav-item" onclick="navigate('devices')">
+      <span class="icon">📱</span> Devices
+    </div>
+    <div class="nav-item" onclick="navigate('settings')">
+      <span class="icon">⚙</span> Settings
+    </div>
+  </div>
+</nav>
+
+<!-- ══════════════ MAIN CONTENT ══════════════ -->
+<main class="main">
+
+<!-- ── DASHBOARD PAGE ── -->
+<div id="page-dashboard" class="page active">
+  <div class="page-header">
+    <div>
+      <div class="page-title">Command Center <span style="color:var(--acid)">⚡</span></div>
+      <div class="page-subtitle">AI-Powered Testing Intelligence — Real-time system overview</div>
+    </div>
+    <div style="display:flex;gap:10px;">
+      <button class="btn btn-ghost btn-sm" onclick="runScan()">🔄 Refresh</button>
+      <button class="btn btn-primary" onclick="navigate('generator')">+ New Test Suite</button>
+    </div>
+  </div>
+
+  <!-- Metrics -->
+  <div class="metrics-grid">
+    <div class="metric-card" data-color="green">
+      <div class="metric-icon">✅</div>
+      <div class="metric-val" id="m-pass">2,841</div>
+      <div class="metric-label">Tests Passed</div>
+      <div class="metric-change up">↑ 14% today</div>
+    </div>
+    <div class="metric-card" data-color="red">
+      <div class="metric-icon">❌</div>
+      <div class="metric-val" id="m-fail">127</div>
+      <div class="metric-label">Tests Failed</div>
+      <div class="metric-change down">↑ 3 new</div>
+    </div>
+    <div class="metric-card" data-color="yellow">
+      <div class="metric-icon">🐛</div>
+      <div class="metric-val" id="m-bugs">48</div>
+      <div class="metric-label">Bugs Found</div>
+      <div class="metric-change up">↑ 6 critical</div>
+    </div>
+    <div class="metric-card" data-color="blue">
+      <div class="metric-icon">🌐</div>
+      <div class="metric-val" id="m-urls">14,320</div>
+      <div class="metric-label">URLs Crawled</div>
+      <div class="metric-change up">↑ 892 today</div>
+    </div>
+    <div class="metric-card" data-color="purple">
+      <div class="metric-icon">🤖</div>
+      <div class="metric-val" id="m-ai">99.2%</div>
+      <div class="metric-label">AI Accuracy</div>
+      <div class="metric-change up">↑ 0.4%</div>
+    </div>
+  </div>
+
+  <!-- AI Agents -->
+  <div style="margin-bottom:8px;font-size:11px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:0.1em;">AI Agents</div>
+  <div class="grid-agent">
+    <div class="agent-card" style="--a-color:var(--acid)">
+      <div class="agent-avatar">🧠
+        <span class="agent-status online"></span>
+      </div>
+      <div class="agent-name">Planner</div>
+      <div class="agent-role">Orchestrator Agent</div>
+      <div class="agent-stat">847</div>
+    </div>
+    <div class="agent-card" style="--a-color:var(--blue)">
+      <div class="agent-avatar">⚗️
+        <span class="agent-status busy"></span>
+      </div>
+      <div class="agent-name">TestGen</div>
+      <div class="agent-role">Code Generator</div>
+      <div class="agent-stat">1,204</div>
+    </div>
+    <div class="agent-card" style="--a-color:var(--yellow)">
+      <div class="agent-avatar">🔧
+        <span class="agent-status online"></span>
+      </div>
+      <div class="agent-name">Healer</div>
+      <div class="agent-role">Self-Healing AI</div>
+      <div class="agent-stat">392</div>
+    </div>
+    <div class="agent-card" style="--a-color:var(--red)">
+      <div class="agent-avatar">🔍
+        <span class="agent-status busy"></span>
+      </div>
+      <div class="agent-name">Debugger</div>
+      <div class="agent-role">Failure Analyst</div>
+      <div class="agent-stat">211</div>
+    </div>
+    <div class="agent-card" style="--a-color:var(--purple)">
+      <div class="agent-avatar">📊
+        <span class="agent-status online"></span>
+      </div>
+      <div class="agent-name">Reporter</div>
+      <div class="agent-role">Report Analyst</div>
+      <div class="agent-stat">156</div>
+    </div>
+  </div>
+
+  <div class="grid-2">
+    <!-- Recent Runs -->
+    <div class="card">
+      <div class="card-header">
+        <span class="card-title">Recent Test Runs</span>
+        <span class="card-badge live">Live</span>
+      </div>
+      <table class="table">
+        <thead>
+          <tr>
+            <th>Suite</th><th>Framework</th><th>Status</th><th>Duration</th><th>AI Score</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr><td>🔐 Auth Flow</td><td><span class="tag blue">Playwright</span></td><td><span class="status-pill pass">● Pass</span></td><td>1m 24s</td><td style="color:var(--green)">98.4</td></tr>
+          <tr><td>🛒 Checkout</td><td><span class="tag blue">Selenium</span></td><td><span class="status-pill fail">● Fail</span></td><td>3m 12s</td><td style="color:var(--red)">41.2</td></tr>
+          <tr><td>📊 Dashboard</td><td><span class="tag blue">Cypress</span></td><td><span class="status-pill pass">● Pass</span></td><td>0m 58s</td><td style="color:var(--green)">96.1</td></tr>
+          <tr><td>🔗 API Health</td><td><span class="tag">PyTest</span></td><td><span class="status-pill run">● Run</span></td><td>2m 07s</td><td style="color:var(--blue)">—</td></tr>
+          <tr><td>🛡 OWASP Scan</td><td><span class="tag red">ZAP</span></td><td><span class="status-pill warn">● Warn</span></td><td>8m 44s</td><td style="color:var(--yellow)">72.0</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Terminal -->
+    <div class="card" style="padding:14px;">
+      <div class="card-header">
+        <span class="card-title">Live Terminal</span>
+        <div style="display:flex;gap:6px;">
+          <div style="width:10px;height:10px;border-radius:50%;background:#ff5f57;"></div>
+          <div style="width:10px;height:10px;border-radius:50%;background:#febc2e;"></div>
+          <div style="width:10px;height:10px;border-radius:50%;background:#28c840;"></div>
+        </div>
+      </div>
+      <div class="terminal" id="mainTerminal">
+        <div class="t-line"><span class="t-prompt">sigma@ai ~$ </span><span class="t-cmd">sigma status</span></div>
+        <div class="t-line"><span class="t-ok">✓ AI Core      [ONLINE] port:8000</span></div>
+        <div class="t-line"><span class="t-ok">✓ LLM Engine   [ONLINE] model:llama3.1</span></div>
+        <div class="t-line"><span class="t-ok">✓ Crawler      [ONLINE] port:8002</span></div>
+        <div class="t-line"><span class="t-warn">⚠ Executor    [BUSY]   3 jobs queued</span></div>
+        <div class="t-line"><span class="t-ok">✓ Healer       [ONLINE] 12 locators fixed</span></div>
+        <div class="t-line"><span class="t-prompt">sigma@ai ~$ </span><span class="t-cmd">sigma run --suite regression</span></div>
+        <div class="t-line"><span class="t-info">→ Loading 48 test cases…</span></div>
+        <div class="t-line"><span class="t-info">→ Spawning 4 parallel workers…</span></div>
+        <div class="t-line"><span class="t-ok">✓ Worker 1: auth_flow.spec.ts … PASS</span></div>
+        <div class="t-line"><span class="t-ok">✓ Worker 2: checkout.spec.ts … PASS</span></div>
+        <div class="t-line"><span class="t-err">✗ Worker 3: payment.spec.ts … FAIL</span></div>
+        <div class="t-line"><span class="t-info">  → AI Debugger analyzing failure…</span></div>
+        <div class="t-line"><span class="t-prompt">sigma@ai ~$ </span><span class="t-cursor"></span></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Pass Rate Chart -->
+  <div class="card" style="margin-bottom:16px;">
+    <div class="card-header">
+      <span class="card-title">7-Day Test Pass Rate Trend</span>
+      <span style="font-size:11px;color:var(--text3)">Updated every 30s</span>
+    </div>
+    <div style="display:flex;align-items:flex-end;gap:6px;height:80px;">
+      <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:4px;">
+        <div style="background:linear-gradient(180deg,var(--acid),rgba(0,255,136,0.2));width:100%;height:62%;border-radius:4px 4px 0 0;min-height:6px;transition:height 0.5s;"></div>
+        <span style="font-size:9px;color:var(--text3)">Mon</span>
+      </div>
+      <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:4px;">
+        <div style="background:linear-gradient(180deg,var(--acid),rgba(0,255,136,0.2));width:100%;height:74%;border-radius:4px 4px 0 0;"></div>
+        <span style="font-size:9px;color:var(--text3)">Tue</span>
+      </div>
+      <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:4px;">
+        <div style="background:linear-gradient(180deg,var(--red),rgba(255,61,113,0.2));width:100%;height:45%;border-radius:4px 4px 0 0;"></div>
+        <span style="font-size:9px;color:var(--text3)">Wed</span>
+      </div>
+      <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:4px;">
+        <div style="background:linear-gradient(180deg,var(--acid),rgba(0,255,136,0.2));width:100%;height:88%;border-radius:4px 4px 0 0;"></div>
+        <span style="font-size:9px;color:var(--text3)">Thu</span>
+      </div>
+      <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:4px;">
+        <div style="background:linear-gradient(180deg,var(--acid),rgba(0,255,136,0.2));width:100%;height:80%;border-radius:4px 4px 0 0;"></div>
+        <span style="font-size:9px;color:var(--text3)">Fri</span>
+      </div>
+      <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:4px;">
+        <div style="background:linear-gradient(180deg,var(--yellow),rgba(255,170,0,0.2));width:100%;height:67%;border-radius:4px 4px 0 0;"></div>
+        <span style="font-size:9px;color:var(--text3)">Sat</span>
+      </div>
+      <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:4px;">
+        <div style="background:linear-gradient(180deg,var(--acid2),rgba(0,212,255,0.2));width:100%;height:92%;border-radius:4px 4px 0 0;border:1px solid var(--acid2);"></div>
+        <span style="font-size:9px;color:var(--acid2)">Today</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ── TEST GENERATOR PAGE ── -->
+<div id="page-generator" class="page">
+  <div class="page-header">
+    <div>
+      <div class="page-title">AI Test Generator 🤖</div>
+      <div class="page-subtitle">LLM-powered test case generation across all frameworks</div>
+    </div>
+    <button class="btn btn-primary" onclick="generateTests()">⚡ Generate Tests</button>
+  </div>
+
+  <div class="grid-2">
+    <div class="card">
+      <div class="card-header"><span class="card-title">Configuration</span></div>
+
+      <div style="margin-bottom:12px;">
+        <label style="font-size:11px;color:var(--text3);display:block;margin-bottom:6px;">Target URL</label>
+        <input type="text" id="targetUrl" value="https://example.com" style="width:100%;height:38px;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:0 14px;font-size:13px;color:var(--text);outline:none;font-family:'Inter',sans-serif;" placeholder="https://your-app.com"/>
+      </div>
+
+      <div class="grid-2" style="margin-bottom:12px;">
+        <div>
+          <label style="font-size:11px;color:var(--text3);display:block;margin-bottom:6px;">Language</label>
+          <select id="langSel" style="width:100%;height:38px;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:0 12px;color:var(--text);font-size:12px;outline:none;">
+            <option>Python</option><option>JavaScript</option>
+            <option>TypeScript</option><option>Java</option><option>C#</option>
+          </select>
+        </div>
+        <div>
+          <label style="font-size:11px;color:var(--text3);display:block;margin-bottom:6px;">Framework</label>
+          <select id="frameSel" style="width:100%;height:38px;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:0 12px;color:var(--text);font-size:12px;outline:none;">
+            <option>Playwright</option><option>Selenium</option>
+            <option>Cypress</option><option>Appium</option><option>Rest-Assured</option>
+          </select>
+        </div>
+      </div>
+
+      <div style="margin-bottom:12px;">
+        <label style="font-size:11px;color:var(--text3);display:block;margin-bottom:6px;">Test Type</label>
+        <div style="display:flex;flex-wrap:wrap;gap:6px;">
+          <span class="sel-chip selected" onclick="toggleChip(this)">UI/E2E</span>
+          <span class="sel-chip" onclick="toggleChip(this)">API</span>
+          <span class="sel-chip" onclick="toggleChip(this)">Unit</span>
+          <span class="sel-chip" onclick="toggleChip(this)">Security</span>
+          <span class="sel-chip" onclick="toggleChip(this)">Visual</span>
+          <span class="sel-chip" onclick="toggleChip(this)">Performance</span>
+          <span class="sel-chip" onclick="toggleChip(this)">Mobile</span>
+          <span class="sel-chip" onclick="toggleChip(this)">Accessibility</span>
+        </div>
+      </div>
+
+      <div style="margin-bottom:12px;">
+        <label style="font-size:11px;color:var(--text3);display:block;margin-bottom:6px;">Locator Strategy</label>
+        <div class="selector-grid">
+          <span class="sel-chip selected">By.id</span><span class="sel-chip">By.css</span>
+          <span class="sel-chip">By.xpath</span><span class="sel-chip">getByRole</span>
+          <span class="sel-chip">getByText</span><span class="sel-chip">getByLabel</span>
+          <span class="sel-chip">By.linkText</span><span class="sel-chip">getByTestId</span>
+        </div>
+      </div>
+
+      <div style="margin-bottom:12px;">
+        <label style="font-size:11px;color:var(--text3);display:block;margin-bottom:6px;">Requirements</label>
+        <textarea id="reqText" style="width:100%;height:80px;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:10px 14px;font-size:12px;color:var(--text);outline:none;resize:none;font-family:'Inter',sans-serif;" placeholder="Describe what needs testing: login with valid/invalid credentials, check error messages, verify redirects…"></textarea>
+      </div>
+
+      <div style="display:flex;gap:8px;flex-wrap:wrap;">
+        <label style="font-size:11px;color:var(--text2);display:flex;align-items:center;gap:5px;"><input type="checkbox" checked/> Hard Assertions</label>
+        <label style="font-size:11px;color:var(--text2);display:flex;align-items:center;gap:5px;"><input type="checkbox"/> Soft Assertions</label>
+        <label style="font-size:11px;color:var(--text2);display:flex;align-items:center;gap:5px;"><input type="checkbox" checked/> Parallel Execution</label>
+        <label style="font-size:11px;color:var(--text2);display:flex;align-items:center;gap:5px;"><input type="checkbox"/> Page Object Model</label>
+      </div>
+    </div>
+
+    <div class="card" style="padding:14px;">
+      <div class="card-header">
+        <span class="card-title">Generated Code</span>
+        <div style="display:flex;gap:6px;">
+          <button class="btn btn-ghost btn-sm" onclick="copyCode()">📋 Copy</button>
+          <button class="btn btn-primary btn-sm" onclick="runCode()">▶ Run</button>
+        </div>
+      </div>
+      <div class="code-block" id="codeOutput">
+<span class="cm"># Generated by Sigma AI — Playwright Python</span>
+<span class="cm"># Framework: Playwright | Type: UI/E2E | Assertions: Hard</span>
+
+<span class="kw">import</span> pytest
+<span class="kw">from</span> playwright.sync_api <span class="kw">import</span> sync_playwright, expect
+
+<span class="kw">class</span> <span class="fn">TestLoginFlow</span>:
+
+    <span class="kw">def</span> <span class="fn">test_valid_login</span>(self, page):
+        <span class="cm">"""Test login with valid credentials"""</span>
+        page.goto(<span class="str">"https://example.com/login"</span>)
+        page.get_by_label(<span class="str">"Email"</span>).fill(<span class="str">"user@test.com"</span>)
+        page.get_by_label(<span class="str">"Password"</span>).fill(<span class="str">"SecurePass123"</span>)
+        page.get_by_role(<span class="str">"button"</span>, name=<span class="str">"Sign In"</span>).click()
+        expect(page).to_have_url(<span class="str">"**/dashboard"</span>)
+        expect(page.get_by_text(<span class="str">"Welcome"</span>)).to_be_visible()
+
+    <span class="kw">def</span> <span class="fn">test_invalid_login</span>(self, page):
+        <span class="cm">"""Test login with invalid credentials"""</span>
+        page.goto(<span class="str">"https://example.com/login"</span>)
+        page.get_by_label(<span class="str">"Email"</span>).fill(<span class="str">"bad@email.com"</span>)
+        page.get_by_label(<span class="str">"Password"</span>).fill(<span class="str">"wrongpass"</span>)
+        page.get_by_role(<span class="str">"button"</span>, name=<span class="str">"Sign In"</span>).click()
+        expect(page.get_by_text(<span class="str">"Invalid credentials"</span>)).to_be_visible()
+        expect(page).to_have_url(<span class="str">"**/login"</span>)
+
+    <span class="kw">def</span> <span class="fn">test_empty_fields</span>(self, page):
+        <span class="cm">"""Test login with empty fields"""</span>
+        page.goto(<span class="str">"https://example.com/login"</span>)
+        page.get_by_role(<span class="str">"button"</span>, name=<span class="str">"Sign In"</span>).click()
+        expect(page.get_by_text(<span class="str">"Email is required"</span>)).to_be_visible()
+      </div>
+      <div class="scan-line" id="genProgress" style="display:none;"></div>
+      <div style="margin-top:10px;">
+        <div class="terminal" id="genTerminal" style="height:100px;">
+          <div class="t-line"><span class="t-prompt">sigma@ai ~$ </span><span class="t-cmd">sigma generate --url https://example.com</span></div>
+          <div class="t-line"><span class="t-ok">✓ AI analyzing DOM structure...</span></div>
+          <div class="t-line"><span class="t-ok">✓ Detected: 14 interactive elements</span></div>
+          <div class="t-line"><span class="t-ok">✓ Generated: 8 test cases</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ── BUG DETECTOR PAGE ── -->
+<div id="page-bugdetect" class="page">
+  <div class="page-header">
+    <div>
+      <div class="page-title">Bug Detector 🐛</div>
+      <div class="page-subtitle">AI-powered multi-layer bug detection — DOM, UX, Backend, Security</div>
+    </div>
+    <button class="btn btn-danger" onclick="startBugScan()">🔥 Deep Scan</button>
+  </div>
+
+  <div class="scanner-input">
+    <input type="text" id="bugUrl" value="https://example.com" placeholder="Enter URL to scan for bugs"/>
+    <select style="height:40px;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:0 12px;color:var(--text);font-size:12px;outline:none;width:160px;">
+      <option>Full Stack Scan</option>
+      <option>UI/DOM Only</option>
+      <option>API/Backend</option>
+      <option>Security Focus</option>
+    </select>
+    <button class="btn btn-primary" onclick="startBugScan()">⚡ Start Scan</button>
+  </div>
+
+  <div id="scanProgress" style="display:none;margin-bottom:16px;">
+    <div style="display:flex;justify-content:space-between;margin-bottom:4px;">
+      <span style="font-size:12px;color:var(--text2)" id="scanStatus">Scanning DOM structure…</span>
+      <span style="font-size:12px;color:var(--acid)" id="scanPct">0%</span>
+    </div>
+    <div class="progress-bar"><div class="progress-fill" id="scanBar" style="width:0%"></div></div>
+    <div class="scan-line"></div>
+  </div>
+
+  <div class="grid-2">
+    <div>
+      <div style="margin-bottom:10px;font-size:11px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:0.1em;">
+        Detected Issues <span style="color:var(--red);background:rgba(255,61,113,0.1);padding:2px 8px;border-radius:10px;font-size:11px;">12 total</span>
+      </div>
+
+      <div class="bug-card" data-sev="critical">
+        <div class="bug-header">
+          <span class="bug-id">#BUG-001</span>
+          <span class="sev-badge">Critical</span>
+        </div>
+        <div class="bug-title">XSS Vulnerability in Comment Field</div>
+        <div class="bug-meta">DOM › /post/123 › textarea#comment · AI Confidence: 98%</div>
+      </div>
+
+      <div class="bug-card" data-sev="critical">
+        <div class="bug-header">
+          <span class="bug-id">#BUG-002</span>
+          <span class="sev-badge">Critical</span>
+        </div>
+        <div class="bug-title">SQL Injection in Search Parameter</div>
+        <div class="bug-meta">API › GET /search?q= · Unescaped input detected · AI: 96%</div>
+      </div>
+
+      <div class="bug-card" data-sev="high">
+        <div class="bug-header">
+          <span class="bug-id">#BUG-003</span>
+          <span class="sev-badge">High</span>
+        </div>
+        <div class="bug-title">Authentication Token Exposed in URL</div>
+        <div class="bug-meta">Network › GET /api/user?token=eyJ… · OWASP A07 · AI: 94%</div>
+      </div>
+
+      <div class="bug-card" data-sev="high">
+        <div class="bug-header">
+          <span class="bug-id">#BUG-004</span>
+          <span class="sev-badge">High</span>
+        </div>
+        <div class="bug-title">Broken Access Control — Admin Panel</div>
+        <div class="bug-meta">Auth › /admin accessible without role check · AI: 91%</div>
+      </div>
+
+      <div class="bug-card" data-sev="medium">
+        <div class="bug-header">
+          <span class="bug-id">#BUG-005</span>
+          <span class="sev-badge">Medium</span>
+        </div>
+        <div class="bug-title">CORS Misconfiguration — Wildcard Origin</div>
+        <div class="bug-meta">Headers › Access-Control-Allow-Origin: * · AI: 88%</div>
+      </div>
+
+      <div class="bug-card" data-sev="medium">
+        <div class="bug-header">
+          <span class="bug-id">#BUG-006</span>
+          <span class="sev-badge">Medium</span>
+        </div>
+        <div class="bug-title">Missing Content Security Policy Header</div>
+        <div class="bug-meta">HTTP Headers › CSP not configured · OWASP A05 · AI: 85%</div>
+      </div>
+
+      <div class="bug-card" data-sev="low">
+        <div class="bug-header">
+          <span class="bug-id">#BUG-007</span>
+          <span class="sev-badge">Low</span>
+        </div>
+        <div class="bug-title">32 Images Missing Alt Text</div>
+        <div class="bug-meta">Accessibility › img tags without alt attribute · WCAG 1.1.1</div>
+      </div>
+    </div>
+
+    <div>
+      <!-- Bug stats -->
+      <div class="card" style="margin-bottom:14px;">
+        <div class="card-header"><span class="card-title">Bug Distribution</span></div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+          <div style="text-align:center;padding:12px;background:rgba(255,61,113,0.06);border-radius:8px;border:1px solid rgba(255,61,113,0.15);">
+            <div style="font-size:28px;font-weight:800;font-family:'Syne',sans-serif;color:var(--red)">2</div>
+            <div style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:0.05em;">Critical</div>
+          </div>
+          <div style="text-align:center;padding:12px;background:rgba(255,170,0,0.06);border-radius:8px;border:1px solid rgba(255,170,0,0.15);">
+            <div style="font-size:28px;font-weight:800;font-family:'Syne',sans-serif;color:var(--yellow)">4</div>
+            <div style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:0.05em;">High</div>
+          </div>
+          <div style="text-align:center;padding:12px;background:rgba(0,212,255,0.06);border-radius:8px;border:1px solid rgba(0,212,255,0.15);">
+            <div style="font-size:28px;font-weight:800;font-family:'Syne',sans-serif;color:var(--blue)">4</div>
+            <div style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:0.05em;">Medium</div>
+          </div>
+          <div style="text-align:center;padding:12px;background:rgba(191,90,242,0.06);border-radius:8px;border:1px solid rgba(191,90,242,0.15);">
+            <div style="font-size:28px;font-weight:800;font-family:'Syne',sans-serif;color:var(--purple)">2</div>
+            <div style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:0.05em;">Low</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- AI Fix Suggestions -->
+      <div class="card">
+        <div class="card-header"><span class="card-title">🤖 AI Fix Suggestions</span></div>
+        <div style="font-size:12px;color:var(--text2);line-height:1.8;">
+          <div style="padding:10px;background:rgba(255,61,113,0.05);border-radius:8px;border-left:3px solid var(--red);margin-bottom:8px;">
+            <div style="font-weight:600;color:var(--text);margin-bottom:3px;">Fix #BUG-001: XSS</div>
+            <code style="font-size:10px;font-family:'JetBrains Mono',monospace;color:var(--green)">sanitize = DOMPurify.sanitize(userInput)</code>
+          </div>
+          <div style="padding:10px;background:rgba(255,61,113,0.05);border-radius:8px;border-left:3px solid var(--red);margin-bottom:8px;">
+            <div style="font-weight:600;color:var(--text);margin-bottom:3px;">Fix #BUG-002: SQLi</div>
+            <code style="font-size:10px;font-family:'JetBrains Mono',monospace;color:var(--green)">cursor.execute("SELECT * WHERE id=?", [id])</code>
+          </div>
+          <div style="padding:10px;background:rgba(255,170,0,0.05);border-radius:8px;border-left:3px solid var(--yellow);">
+            <div style="font-weight:600;color:var(--text);margin-bottom:3px;">Fix #BUG-003: Token Leak</div>
+            <code style="font-size:10px;font-family:'JetBrains Mono',monospace;color:var(--green)">Use Authorization header, not URL params</code>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ── SECURITY SCANNER PAGE ── -->
+<div id="page-security" class="page">
+  <div class="page-header">
+    <div>
+      <div class="page-title">Security Scanner 🛡</div>
+      <div class="page-subtitle">OWASP Top 10 + Zero-day vulnerability detection</div>
+    </div>
+    <button class="btn btn-danger" onclick="securityScan()">🔴 Attack Surface Scan</button>
+  </div>
+
+  <div class="card" style="margin-bottom:16px;">
+    <div class="card-header"><span class="card-title">OWASP Top 10 — Scan Results</span><span class="card-badge live">Active</span></div>
+    <table class="table">
+      <thead><tr><th>#</th><th>Vulnerability</th><th>Status</th><th>Risk Score</th><th>Details</th></tr></thead>
+      <tbody>
+        <tr><td style="font-family:'JetBrains Mono',monospace;font-size:10px;">A01</td><td>Broken Access Control</td><td><span class="status-pill fail">● Vulnerable</span></td><td style="color:var(--red);font-weight:700">9.8</td><td style="font-size:11px;color:var(--text3)">/admin panel accessible</td></tr>
+        <tr><td style="font-family:'JetBrains Mono',monospace;font-size:10px;">A02</td><td>Cryptographic Failures</td><td><span class="status-pill warn">● Warning</span></td><td style="color:var(--yellow);font-weight:700">6.5</td><td style="font-size:11px;color:var(--text3)">Weak cipher detected</td></tr>
+        <tr><td style="font-family:'JetBrains Mono',monospace;font-size:10px;">A03</td><td>Injection (XSS/SQLi)</td><td><span class="status-pill fail">● Vulnerable</span></td><td style="color:var(--red);font-weight:700">9.3</td><td style="font-size:11px;color:var(--text3)">3 injection points</td></tr>
+        <tr><td style="font-family:'JetBrains Mono',monospace;font-size:10px;">A04</td><td>Insecure Design</td><td><span class="status-pill pass">● Passed</span></td><td style="color:var(--green);font-weight:700">2.1</td><td style="font-size:11px;color:var(--text3)">Architecture OK</td></tr>
+        <tr><td style="font-family:'JetBrains Mono',monospace;font-size:10px;">A05</td><td>Security Misconfiguration</td><td><span class="status-pill fail">● Vulnerable</span></td><td style="color:var(--red);font-weight:700">8.1</td><td style="font-size:11px;color:var(--text3)">CSP, HSTS missing</td></tr>
+        <tr><td style="font-family:'JetBrains Mono',monospace;font-size:10px;">A06</td><td>Vulnerable Components</td><td><span class="status-pill warn">● Warning</span></td><td style="color:var(--yellow);font-weight:700">5.9</td><td style="font-size:11px;color:var(--text3)">lodash 4.17.15 (CVE)</td></tr>
+        <tr><td style="font-family:'JetBrains Mono',monospace;font-size:10px;">A07</td><td>Auth & Session Failures</td><td><span class="status-pill fail">● Vulnerable</span></td><td style="color:var(--red);font-weight:700">8.8</td><td style="font-size:11px;color:var(--text3)">Token in URL params</td></tr>
+        <tr><td style="font-family:'JetBrains Mono',monospace;font-size:10px;">A08</td><td>Software Integrity Failures</td><td><span class="status-pill pass">● Passed</span></td><td style="color:var(--green);font-weight:700">1.4</td><td style="font-size:11px;color:var(--text3)">Integrity checks OK</td></tr>
+        <tr><td style="font-family:'JetBrains Mono',monospace;font-size:10px;">A09</td><td>Logging & Monitoring</td><td><span class="status-pill warn">● Warning</span></td><td style="color:var(--yellow);font-weight:700">5.2</td><td style="font-size:11px;color:var(--text3)">Insufficient logging</td></tr>
+        <tr><td style="font-family:'JetBrains Mono',monospace;font-size:10px;">A10</td><td>SSRF</td><td><span class="status-pill pass">● Passed</span></td><td style="color:var(--green);font-weight:700">2.7</td><td style="font-size:11px;color:var(--text3)">No SSRF vectors</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="vuln-grid">
+    <div class="vuln-card">
+      <div class="vuln-name">🔓 SQL Injection</div>
+      <div class="vuln-desc">Unsanitized inputs in /search, /login endpoints. Attacker can dump entire database.</div>
+      <div class="severity-bar">
+        <div class="s-dot filled critical"></div><div class="s-dot filled critical"></div>
+        <div class="s-dot filled critical"></div><div class="s-dot filled critical"></div><div class="s-dot"></div>
+      </div>
+    </div>
+    <div class="vuln-card">
+      <div class="vuln-name">⚡ XSS — Stored</div>
+      <div class="vuln-desc">Comment field allows script injection persisted to database. Affects all users viewing posts.</div>
+      <div class="severity-bar">
+        <div class="s-dot filled critical"></div><div class="s-dot filled critical"></div>
+        <div class="s-dot filled critical"></div><div class="s-dot"></div><div class="s-dot"></div>
+      </div>
+    </div>
+    <div class="vuln-card">
+      <div class="vuln-name">🔑 Broken Auth</div>
+      <div class="vuln-desc">JWT tokens don't expire, weak signing secret, session not invalidated on logout.</div>
+      <div class="severity-bar">
+        <div class="s-dot filled high"></div><div class="s-dot filled high"></div>
+        <div class="s-dot filled high"></div><div class="s-dot"></div><div class="s-dot"></div>
+      </div>
+    </div>
+    <div class="vuln-card">
+      <div class="vuln-name">🌐 CORS Wildcard</div>
+      <div class="vuln-desc">Access-Control-Allow-Origin: * on all API endpoints. Cross-origin data theft possible.</div>
+      <div class="severity-bar">
+        <div class="s-dot filled med"></div><div class="s-dot filled med"></div>
+        <div class="s-dot"></div><div class="s-dot"></div><div class="s-dot"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ── NETWORK MONITOR PAGE ── -->
+<div id="page-network" class="page">
+  <div class="page-header">
+    <div>
+      <div class="page-title">Network Monitor 📡</div>
+      <div class="page-subtitle">Real-time API traffic analysis, header inspection, script detection</div>
+    </div>
+    <div style="display:flex;gap:8px;">
+      <select style="height:34px;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:0 12px;color:var(--text);font-size:12px;outline:none;">
+        <option>All Requests</option><option>Failed Only</option><option>Slow (>2s)</option>
+      </select>
+      <button class="btn btn-primary btn-sm">▶ Start Capture</button>
+    </div>
+  </div>
+
+  <!-- Script Filter -->
+  <div class="card" style="margin-bottom:14px;">
+    <div class="card-header"><span class="card-title">Script Detector</span></div>
+    <div style="display:flex;flex-wrap:wrap;gap:6px;">
+      <span class="sel-chip selected">gtm.js</span><span class="sel-chip selected">ga4</span>
+      <span class="sel-chip">gpt.js</span><span class="sel-chip">chartbeat</span>
+      <span class="sel-chip selected">comscore</span><span class="sel-chip">hotjar</span>
+      <span class="sel-chip">clarity.js</span><span class="sel-chip">fbevents</span>
+      <span class="sel-chip">axe.js</span><span class="sel-chip">Custom…</span>
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:12px;">
+      <div style="padding:8px;background:rgba(0,255,136,0.06);border-radius:6px;border:1px solid rgba(0,255,136,0.15);text-align:center;">
+        <div style="font-size:10px;color:var(--text3);margin-bottom:3px;">GTM</div>
+        <div style="font-size:11px;color:var(--green);font-weight:600;">✓ Loaded</div>
+      </div>
+      <div style="padding:8px;background:rgba(0,255,136,0.06);border-radius:6px;border:1px solid rgba(0,255,136,0.15);text-align:center;">
+        <div style="font-size:10px;color:var(--text3);margin-bottom:3px;">GA4</div>
+        <div style="font-size:11px;color:var(--green);font-weight:600;">✓ Firing</div>
+      </div>
+      <div style="padding:8px;background:rgba(255,170,0,0.06);border-radius:6px;border:1px solid rgba(255,170,0,0.15);text-align:center;">
+        <div style="font-size:10px;color:var(--text3);margin-bottom:3px;">Comscore</div>
+        <div style="font-size:11px;color:var(--yellow);font-weight:600;">⚠ Delayed</div>
+      </div>
+      <div style="padding:8px;background:rgba(255,61,113,0.06);border-radius:6px;border:1px solid rgba(255,61,113,0.15);text-align:center;">
+        <div style="font-size:10px;color:var(--text3);margin-bottom:3px;">GPT.js</div>
+        <div style="font-size:11px;color:var(--red);font-weight:600;">✗ Blocked</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Network Log -->
+  <div class="card">
+    <div class="card-header"><span class="card-title">Request Log</span><span class="card-badge live">Live</span></div>
+    <div class="network-log">
+      <div class="net-row header-row">
+        <span>Method</span><span>Status</span><span>URL</span><span>Time</span><span>Size</span><span>Type</span>
+      </div>
+      <div class="net-row"><span class="method-pill method-get">GET</span><span class="status-200">200</span><span style="color:var(--text2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">/api/user/profile</span><span style="color:var(--green)">124ms</span><span>4.2KB</span><span style="color:var(--text3)">JSON</span></div>
+      <div class="net-row"><span class="method-pill method-post">POST</span><span class="status-200">201</span><span style="color:var(--text2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">/api/comments/create</span><span style="color:var(--green)">89ms</span><span>1.1KB</span><span style="color:var(--text3)">JSON</span></div>
+      <div class="net-row"><span class="method-pill method-get">GET</span><span class="status-4xx">404</span><span style="color:var(--red);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">/api/old/endpoint</span><span style="color:var(--yellow)">445ms</span><span>0.3KB</span><span style="color:var(--text3)">JSON</span></div>
+      <div class="net-row"><span class="method-pill method-get">GET</span><span class="status-200">200</span><span style="color:var(--text2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">/static/js/main.chunk.js</span><span style="color:var(--yellow)">2100ms</span><span>892KB</span><span style="color:var(--text3)">JS</span></div>
+      <div class="net-row"><span class="method-pill method-post">POST</span><span class="status-5xx">500</span><span style="color:var(--red);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">/api/checkout/process</span><span style="color:var(--red)">8432ms</span><span>0.6KB</span><span style="color:var(--text3)">JSON</span></div>
+      <div class="net-row"><span class="method-pill method-del">DEL</span><span class="status-200">204</span><span style="color:var(--text2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">/api/session/logout</span><span style="color:var(--green)">43ms</span><span>0.1KB</span><span style="color:var(--text3)">JSON</span></div>
+      <div class="net-row"><span class="method-pill method-get">GET</span><span class="status-200">200</span><span style="color:var(--text2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">/cdn/gtm.js?id=GTM-XXXX</span><span style="color:var(--green)">211ms</span><span>78KB</span><span style="color:var(--text3)">Script</span></div>
+    </div>
+  </div>
+</div>
+
+<!-- ── REPORTS PAGE ── -->
+<div id="page-reports" class="page">
+  <div class="page-header">
+    <div>
+      <div class="page-title">Reports & Analytics 📊</div>
+      <div class="page-subtitle">AI-generated insights with share and export capabilities</div>
+    </div>
+    <div style="display:flex;gap:8px;">
+      <button class="btn btn-ghost btn-sm">📧 Email Report</button>
+      <button class="btn btn-primary btn-sm">⬇ Export PDF</button>
+    </div>
+  </div>
+
+  <div class="grid-2">
+    <div class="card">
+      <div class="card-header"><span class="card-title">Test Execution Summary</span></div>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:16px;">
+        <div style="text-align:center;padding:12px;background:var(--surface2);border-radius:8px;">
+          <div style="font-size:24px;font-weight:800;font-family:'Syne',sans-serif;color:var(--green)">96.1%</div>
+          <div style="font-size:10px;color:var(--text3)">Pass Rate</div>
+        </div>
+        <div style="text-align:center;padding:12px;background:var(--surface2);border-radius:8px;">
+          <div style="font-size:24px;font-weight:800;font-family:'Syne',sans-serif;color:var(--blue)">2,968</div>
+          <div style="font-size:10px;color:var(--text3)">Total Tests</div>
+        </div>
+        <div style="text-align:center;padding:12px;background:var(--surface2);border-radius:8px;">
+          <div style="font-size:24px;font-weight:800;font-family:'Syne',sans-serif;color:var(--yellow)">4m 12s</div>
+          <div style="font-size:10px;color:var(--text3)">Avg Duration</div>
+        </div>
+      </div>
+
+      <div style="margin-bottom:8px;font-size:11px;color:var(--text3);">Coverage by Module</div>
+      <div style="display:flex;flex-direction:column;gap:8px;">
+        <div><div style="display:flex;justify-content:space-between;font-size:11px;margin-bottom:3px;"><span>Authentication</span><span style="color:var(--green)">98%</span></div><div class="progress-bar"><div class="progress-fill" style="width:98%;background:linear-gradient(90deg,var(--green),var(--acid2));"></div></div></div>
+        <div><div style="display:flex;justify-content:space-between;font-size:11px;margin-bottom:3px;"><span>Checkout Flow</span><span style="color:var(--yellow)">67%</span></div><div class="progress-bar"><div class="progress-fill" style="width:67%;background:linear-gradient(90deg,var(--yellow),var(--acid4));"></div></div></div>
+        <div><div style="display:flex;justify-content:space-between;font-size:11px;margin-bottom:3px;"><span>API Endpoints</span><span style="color:var(--blue)">84%</span></div><div class="progress-bar"><div class="progress-fill" style="width:84%;background:linear-gradient(90deg,var(--blue),var(--acid2));"></div></div></div>
+        <div><div style="display:flex;justify-content:space-between;font-size:11px;margin-bottom:3px;"><span>Security Checks</span><span style="color:var(--red)">42%</span></div><div class="progress-bar"><div class="progress-fill" style="width:42%;background:linear-gradient(90deg,var(--red),var(--yellow));"></div></div></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-header"><span class="card-title">🤖 AI Analysis & Insights</span></div>
+      <div style="font-size:12px;line-height:1.8;color:var(--text2);">
+        <div style="padding:10px;background:rgba(255,61,113,0.05);border-radius:8px;margin-bottom:10px;border-left:3px solid var(--red);">
+          <strong style="color:var(--text);">⚠ Critical Finding:</strong> Checkout module shows 33% failure spike since last deployment. AI suspects <code style="color:var(--acid);font-family:'JetBrains Mono',monospace;font-size:10px;">payment_gateway.process()</code> timeout issue.
+        </div>
+        <div style="padding:10px;background:rgba(0,255,136,0.05);border-radius:8px;margin-bottom:10px;border-left:3px solid var(--green);">
+          <strong style="color:var(--text);">✓ Positive:</strong> Auth suite improved 14% after locator self-healing applied to 8 broken selectors automatically.
+        </div>
+        <div style="padding:10px;background:rgba(0,212,255,0.05);border-radius:8px;border-left:3px solid var(--blue);">
+          <strong style="color:var(--text);">💡 Recommendation:</strong> Add 18 API edge-case tests for <code style="color:var(--acid);font-family:'JetBrains Mono',monospace;font-size:10px;">/checkout/process</code> — AI detected uncovered boundary conditions.
+        </div>
+      </div>
+      <div style="display:flex;gap:6px;margin-top:14px;flex-wrap:wrap;">
+        <button class="btn btn-ghost btn-sm">📧 Email</button>
+        <button class="btn btn-ghost btn-sm">💬 Slack</button>
+        <button class="btn btn-ghost btn-sm">📱 WhatsApp</button>
+        <button class="btn btn-ghost btn-sm">📄 PDF</button>
+        <button class="btn btn-ghost btn-sm">📊 CSV</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ── CRAWLER PAGE ── -->
+<div id="page-crawler" class="page">
+  <div class="page-header">
+    <div>
+      <div class="page-title">URL Crawler 🕷</div>
+      <div class="page-subtitle">Multi-source URL validation with SEO, DOM and analytics checks</div>
+    </div>
+    <button class="btn btn-primary" onclick="startCrawl()">🕷 Start Crawl</button>
+  </div>
+
+  <div class="card" style="margin-bottom:16px;">
+    <div class="tabs">
+      <div class="tab active" onclick="switchTab(this,'web')">🌐 Web URL</div>
+      <div class="tab" onclick="switchTab(this,'sitemap')">🗺 Sitemap</div>
+      <div class="tab" onclick="switchTab(this,'csv')">📄 CSV Upload</div>
+      <div class="tab" onclick="switchTab(this,'sheets')">📊 Google Sheets</div>
+    </div>
+    <input type="text" value="https://example.com" style="width:100%;height:40px;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:0 14px;font-size:13px;color:var(--text);outline:none;font-family:'Inter',sans-serif;" placeholder="Enter URL to crawl"/>
+  </div>
+
+  <div class="grid-2">
+    <div class="card">
+      <div class="card-header"><span class="card-title">Validation Checks</span></div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;font-size:12px;">
+        <label style="display:flex;align-items:center;gap:6px;color:var(--text2);cursor:pointer;"><input type="checkbox" checked/> All href URLs</label>
+        <label style="display:flex;align-items:center;gap:6px;color:var(--text2);cursor:pointer;"><input type="checkbox" checked/> Broken links</label>
+        <label style="display:flex;align-items:center;gap:6px;color:var(--text2);cursor:pointer;"><input type="checkbox" checked/> Image alt text</label>
+        <label style="display:flex;align-items:center;gap:6px;color:var(--text2);cursor:pointer;"><input type="checkbox" checked/> Meta tags</label>
+        <label style="display:flex;align-items:center;gap:6px;color:var(--text2);cursor:pointer;"><input type="checkbox" checked/> Schema markup</label>
+        <label style="display:flex;align-items:center;gap:6px;color:var(--text2);cursor:pointer;"><input type="checkbox" checked/> GA4 tracking</label>
+        <label style="display:flex;align-items:center;gap:6px;color:var(--text2);cursor:pointer;"><input type="checkbox"/> Comscore tag</label>
+        <label style="display:flex;align-items:center;gap:6px;color:var(--text2);cursor:pointer;"><input type="checkbox" checked/> Canonical tags</label>
+        <label style="display:flex;align-items:center;gap:6px;color:var(--text2);cursor:pointer;"><input type="checkbox"/> 301 Redirects</label>
+        <label style="display:flex;align-items:center;gap:6px;color:var(--text2);cursor:pointer;"><input type="checkbox" checked/> Core Web Vitals</label>
+        <label style="display:flex;align-items:center;gap:6px;color:var(--text2);cursor:pointer;"><input type="checkbox"/> Ad unit IDs</label>
+        <label style="display:flex;align-items:center;gap:6px;color:var(--text2);cursor:pointer;"><input type="checkbox" checked/> Lazy load detect</label>
+        <label style="display:flex;align-items:center;gap:6px;color:var(--text2);cursor:pointer;"><input type="checkbox" checked/> JS errors</label>
+        <label style="display:flex;align-items:center;gap:6px;color:var(--text2);cursor:pointer;"><input type="checkbox" checked/> WCAG Accessibility</label>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-header"><span class="card-title">Crawl Results</span><span class="card-badge green">124 URLs</span></div>
+      <div style="max-height:240px;overflow-y:auto;">
+        <table class="table">
+          <thead><tr><th>URL</th><th>Status</th><th>Checks</th></tr></thead>
+          <tbody>
+            <tr>
+              <td style="font-size:11px;font-family:'JetBrains Mono',monospace;color:var(--blue)">/home</td>
+              <td><span class="status-pill pass">200</span></td>
+              <td><div class="url-status"><span class="check-chip check-pass">SEO</span><span class="check-chip check-pass">GA4</span><span class="check-chip check-fail">ALT</span></div></td>
+            </tr>
+            <tr>
+              <td style="font-size:11px;font-family:'JetBrains Mono',monospace;color:var(--blue)">/about</td>
+              <td><span class="status-pill pass">200</span></td>
+              <td><div class="url-status"><span class="check-chip check-pass">SEO</span><span class="check-chip check-warn">META</span><span class="check-chip check-pass">GA4</span></div></td>
+            </tr>
+            <tr>
+              <td style="font-size:11px;font-family:'JetBrains Mono',monospace;color:var(--red)">/old-page</td>
+              <td><span class="status-pill fail">404</span></td>
+              <td><div class="url-status"><span class="check-chip check-fail">BROKEN</span></div></td>
+            </tr>
+            <tr>
+              <td style="font-size:11px;font-family:'JetBrains Mono',monospace;color:var(--yellow)">/products</td>
+              <td><span class="status-pill warn">301</span></td>
+              <td><div class="url-status"><span class="check-chip check-warn">REDIR</span><span class="check-chip check-pass">SEO</span></div></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <div style="margin-top:12px;display:flex;gap:8px;">
+        <button class="btn btn-ghost btn-sm">⬇ Export CSV</button>
+        <button class="btn btn-ghost btn-sm">⬇ Export Excel</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ── SETTINGS PAGE ── -->
+<div id="page-settings" class="page">
+  <div class="page-header">
+    <div>
+      <div class="page-title">Settings ⚙</div>
+      <div class="page-subtitle">Configure LLM providers, integrations, and preferences</div>
+    </div>
+  </div>
+
+  <div class="grid-2">
+    <div class="card">
+      <div class="card-header"><span class="card-title">LLM Provider</span></div>
+      <div style="display:flex;flex-direction:column;gap:8px;margin-bottom:16px;">
+        <div style="padding:12px;background:rgba(0,255,136,0.06);border-radius:8px;border:1px solid rgba(0,255,136,0.3);display:flex;align-items:center;gap:10px;cursor:pointer;">
+          <div style="width:8px;height:8px;border-radius:50%;background:var(--green);box-shadow:0 0 6px var(--green);"></div>
+          <div>
+            <div style="font-size:12px;font-weight:600;">Groq — LLaMA 3.1 70B</div>
+            <div style="font-size:10px;color:var(--text3);">FREE · 14,400 tokens/min · Recommended</div>
+          </div>
+          <span style="margin-left:auto;font-size:10px;color:var(--green);font-weight:700;">ACTIVE</span>
+        </div>
+        <div style="padding:12px;background:var(--surface2);border-radius:8px;border:1px solid var(--border);display:flex;align-items:center;gap:10px;cursor:pointer;">
+          <div style="width:8px;height:8px;border-radius:50%;background:var(--text3);"></div>
+          <div>
+            <div style="font-size:12px;font-weight:600;">Ollama — Local LLaMA</div>
+            <div style="font-size:10px;color:var(--text3);">100% FREE · No API key · Private</div>
+          </div>
+        </div>
+        <div style="padding:12px;background:var(--surface2);border-radius:8px;border:1px solid var(--border);display:flex;align-items:center;gap:10px;cursor:pointer;">
+          <div style="width:8px;height:8px;border-radius:50%;background:var(--text3);"></div>
+          <div>
+            <div style="font-size:12px;font-weight:600;">Google Gemini 1.5 Flash</div>
+            <div style="font-size:10px;color:var(--text3);">FREE tier · 15 req/min</div>
+          </div>
+        </div>
+        <div style="padding:12px;background:var(--surface2);border-radius:8px;border:1px solid var(--border);display:flex;align-items:center;gap:10px;cursor:pointer;">
+          <div style="width:8px;height:8px;border-radius:50%;background:var(--text3);"></div>
+          <div>
+            <div style="font-size:12px;font-weight:600;">Anthropic Claude</div>
+            <div style="font-size:10px;color:var(--text3);">Paid · Highest quality</div>
+          </div>
+        </div>
+      </div>
+      <input type="text" placeholder="GROQ_API_KEY (get free at console.groq.com)" style="width:100%;height:38px;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:0 14px;font-size:12px;color:var(--text);outline:none;font-family:'JetBrains Mono',monospace;"/>
+    </div>
+
+    <div class="card">
+      <div class="card-header"><span class="card-title">Quick Setup Guide</span></div>
+      <div class="terminal" style="height:280px;">
+        <div class="t-line"><span class="t-info"># 1. Clone & Setup</span></div>
+        <div class="t-line"><span class="t-prompt">$ </span><span class="t-cmd">git clone https://github.com/org/sigma</span></div>
+        <div class="t-line"><span class="t-prompt">$ </span><span class="t-cmd">cd sigma && ./scripts/setup.sh</span></div>
+        <div class="t-line"><span class="t-ok">✓ Dependencies installed</span></div>
+        <div class="t-line"></div>
+        <div class="t-line"><span class="t-info"># 2. Set FREE API Key (Groq)</span></div>
+        <div class="t-line"><span class="t-prompt">$ </span><span class="t-cmd">sigma config set LLM_PROVIDER groq</span></div>
+        <div class="t-line"><span class="t-prompt">$ </span><span class="t-cmd">sigma config set GROQ_API_KEY gsk_…</span></div>
+        <div class="t-line"></div>
+        <div class="t-line"><span class="t-info"># 3. OR use 100% FREE local Ollama</span></div>
+        <div class="t-line"><span class="t-prompt">$ </span><span class="t-cmd">ollama pull llama3.1</span></div>
+        <div class="t-line"><span class="t-prompt">$ </span><span class="t-cmd">sigma config set LLM_PROVIDER ollama</span></div>
+        <div class="t-line"></div>
+        <div class="t-line"><span class="t-info"># 4. Start everything</span></div>
+        <div class="t-line"><span class="t-prompt">$ </span><span class="t-cmd">./scripts/start.sh</span></div>
+        <div class="t-line"><span class="t-ok">✓ Dashboard: http://localhost:3000</span></div>
+        <div class="t-line"><span class="t-ok">✓ API Docs:  http://localhost:8000/docs</span></div>
+        <div class="t-line"><span class="t-prompt">$ </span><span class="t-cursor"></span></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Other pages placeholder -->
+<div id="page-executor" class="page">
+  <div class="page-header"><div><div class="page-title">Test Executor ▶</div><div class="page-subtitle">Run test suites across frameworks and environments</div></div></div>
+  <div class="card"><div style="padding:40px;text-align:center;color:var(--text3);"><div style="font-size:48px;margin-bottom:16px;">▶</div><div style="font-size:14px;">Select a test suite and click Run to execute</div><br/><button class="btn btn-primary" onclick="navigate('generator')">Generate Test Suite First</button></div></div>
+</div>
+<div id="page-visual" class="page">
+  <div class="page-header"><div><div class="page-title">Visual Tester 👁</div><div class="page-subtitle">Pixel-perfect screenshot comparison and regression detection</div></div></div>
+  <div class="card"><div style="padding:40px;text-align:center;color:var(--text3);"><div style="font-size:48px;margin-bottom:16px;">👁</div><div>Visual comparison engine — upload baseline screenshots to begin</div><br/><button class="btn btn-primary">Upload Baseline</button></div></div>
+</div>
+<div id="page-performance" class="page">
+  <div class="page-header"><div><div class="page-title">Performance ⚡</div><div class="page-subtitle">k6 load testing, Lighthouse CI, Core Web Vitals</div></div></div>
+  <div class="card" style="margin-bottom:14px;"><div class="card-header"><span class="card-title">Core Web Vitals</span></div><div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;"><div style="text-align:center;padding:16px;background:rgba(0,255,136,0.06);border-radius:8px;"><div style="font-size:28px;font-weight:800;color:var(--green);font-family:'Syne',sans-serif;">1.2s</div><div style="font-size:11px;color:var(--text3);">LCP</div></div><div style="text-align:center;padding:16px;background:rgba(0,255,136,0.06);border-radius:8px;"><div style="font-size:28px;font-weight:800;color:var(--green);font-family:'Syne',sans-serif;">0.08</div><div style="font-size:11px;color:var(--text3);">CLS</div></div><div style="text-align:center;padding:16px;background:rgba(255,170,0,0.06);border-radius:8px;"><div style="font-size:28px;font-weight:800;color:var(--yellow);font-family:'Syne',sans-serif;">142ms</div><div style="font-size:11px;color:var(--text3);">FID</div></div></div></div>
+</div>
+<div id="page-healer" class="page">
+  <div class="page-header"><div><div class="page-title">Locator Healer 🔧</div><div class="page-subtitle">AI-powered self-healing for broken CSS/XPath selectors</div></div></div>
+  <div class="card"><div style="margin-bottom:12px;"><label style="font-size:11px;color:var(--text3);display:block;margin-bottom:6px;">Broken Locator</label><input type="text" value="#old-submit-btn" style="width:100%;height:40px;background:var(--surface2);border:1px solid var(--red);border-radius:8px;padding:0 14px;font-size:13px;color:var(--red);outline:none;font-family:'JetBrains Mono',monospace;"/></div><button class="btn btn-primary">🔧 Heal Locator</button><div style="margin-top:16px;padding:12px;background:rgba(0,255,136,0.05);border-radius:8px;border:1px solid rgba(0,255,136,0.2);"><div style="font-size:11px;color:var(--text3);margin-bottom:8px;">AI Suggestions (ranked by confidence)</div><div style="font-family:'JetBrains Mono',monospace;font-size:11px;display:flex;flex-direction:column;gap:6px;"><span style="color:var(--green);">● 97% — getByRole("button", name="Submit")</span><span style="color:var(--acid2);">● 91% — [data-testid="submit-form"]</span><span style="color:var(--yellow);">● 84% — button.submit-action:last-child</span><span style="color:var(--text2);">● 76% — form >> button[type="submit"]</span></div></div></div>
+</div>
+<div id="page-debugger" class="page">
+  <div class="page-header"><div><div class="page-title">AI Debugger 🔍</div><div class="page-subtitle">Paste error logs for instant AI root cause analysis</div></div></div>
+  <div class="card"><textarea style="width:100%;height:120px;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:12px 14px;font-size:11px;color:var(--red);outline:none;resize:none;font-family:'JetBrains Mono',monospace;margin-bottom:12px;" placeholder="Paste error log / stack trace here…">TimeoutError: Locator.click: Timeout 30000ms exceeded
+Call log:
+  waiting for getBy Text("Submit Order")
+  element found: <button class="btn btn-primary" disabled>Submit Order</button></textarea><button class="btn btn-primary">🔍 Analyze with AI</button><div style="margin-top:14px;padding:14px;background:rgba(0,212,255,0.05);border-radius:8px;border-left:3px solid var(--blue);"><div style="font-size:12px;font-weight:600;margin-bottom:6px;color:var(--text);">🤖 AI Root Cause Analysis</div><div style="font-size:12px;color:var(--text2);line-height:1.8;">The Submit Order button has a <code style="color:var(--acid);font-family:'JetBrains Mono',monospace;">disabled</code> attribute — likely a form validation state. The test is clicking before required fields are filled. <br/><strong style="color:var(--text);">Fix:</strong> Add <code style="color:var(--acid);font-family:'JetBrains Mono',monospace;">page.fill("#card-number", ...)</code> before clicking submit.</div></div></div>
+</div>
+<div id="page-accessibility" class="page">
+  <div class="page-header"><div><div class="page-title">Accessibility ♿</div><div class="page-subtitle">WCAG 2.1 AA/AAA compliance scanning with axe-core</div></div></div>
+  <div class="card"><div class="card-header"><span class="card-title">WCAG Violations</span><span class="card-badge live">axe-core</span></div><table class="table"><thead><tr><th>Rule</th><th>Impact</th><th>Elements</th><th>WCAG</th></tr></thead><tbody><tr><td>color-contrast</td><td><span class="status-pill fail">Critical</span></td><td>24</td><td>1.4.3</td></tr><tr><td>image-alt</td><td><span class="status-pill fail">Critical</span></td><td>32</td><td>1.1.1</td></tr><tr><td>label</td><td><span class="status-pill fail">Critical</span></td><td>8</td><td>1.3.1</td></tr><tr><td>heading-order</td><td><span class="status-pill warn">Moderate</span></td><td>5</td><td>1.3.1</td></tr><tr><td>landmark-one-main</td><td><span class="status-pill warn">Moderate</span></td><td>1</td><td>1.3.6</td></tr></tbody></table></div>
+</div>
+<div id="page-scheduler" class="page">
+  <div class="page-header"><div><div class="page-title">Scheduler 📅</div><div class="page-subtitle">Automated test scheduling with cron + email notifications</div></div></div>
+  <div class="card"><div class="card-header"><span class="card-title">Scheduled Jobs</span><button class="btn btn-primary btn-sm">+ New Job</button></div><table class="table"><thead><tr><th>Name</th><th>Schedule</th><th>Last Run</th><th>Status</th><th>Actions</th></tr></thead><tbody><tr><td>Daily Regression</td><td style="font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--acid);">0 9 * * *</td><td style="font-size:11px;color:var(--text3);">Today 09:00</td><td><span class="status-pill pass">Pass</span></td><td><button class="btn btn-ghost btn-sm">▶</button></td></tr><tr><td>Nightly Security</td><td style="font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--acid);">0 23 * * *</td><td style="font-size:11px;color:var(--text3);">Yesterday</td><td><span class="status-pill warn">Warn</span></td><td><button class="btn btn-ghost btn-sm">▶</button></td></tr><tr><td>Weekly Full Suite</td><td style="font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--acid);">0 6 * * 1</td><td style="font-size:11px;color:var(--text3);">Mon 06:00</td><td><span class="status-pill pass">Pass</span></td><td><button class="btn btn-ghost btn-sm">▶</button></td></tr></tbody></table></div>
+</div>
+<div id="page-devices" class="page">
+  <div class="page-header"><div><div class="page-title">Device Manager 📱</div><div class="page-subtitle">Cross-platform execution — desktop, mobile, tablet, cloud</div></div></div>
+  <div class="metrics-grid" style="grid-template-columns:repeat(4,1fr);">
+    <div class="metric-card" data-color="green"><div class="metric-icon">🖥</div><div class="metric-val" style="font-size:22px;">Chrome</div><div class="metric-label">Desktop Active</div></div>
+    <div class="metric-card" data-color="blue"><div class="metric-icon">📱</div><div class="metric-val" style="font-size:22px;">Android</div><div class="metric-label">Mobile Active</div></div>
+    <div class="metric-card" data-color="yellow"><div class="metric-icon">🍎</div><div class="metric-val" style="font-size:22px;">iOS 17</div><div class="metric-label">Simulator</div></div>
+    <div class="metric-card" data-color="purple"><div class="metric-icon">☁</div><div class="metric-val" style="font-size:22px;">12</div><div class="metric-label">Cloud Devices</div></div>
+  </div>
+</div>
+
+</main>
+
+<!-- ══════════════ FOOTER ══════════════ -->
+<footer class="footer">
+  <div class="footer-grid">
+    <div class="footer-brand">
+      <h3>⚡ SIGMA TESTING AI AGENT</h3>
+      <p>The Alpha & Omega of AI-powered software testing. Break systems before users do.</p>
+      <div class="footer-social">
+        <a class="social-btn">𝕏</a>
+        <a class="social-btn">⌥</a>
+        <a class="social-btn">in</a>
+        <a class="social-btn">◈</a>
+        <a class="social-btn">▶</a>
+      </div>
+    </div>
+    <div class="footer-col">
+      <h4>Product</h4>
+      <a href="#">Features</a>
+      <a href="#">Pricing</a>
+      <a href="#">Changelog</a>
+      <a href="#">Roadmap</a>
+    </div>
+    <div class="footer-col">
+      <h4>Resources</h4>
+      <a href="#">Documentation</a>
+      <a href="#">API Reference</a>
+      <a href="#">GitHub Repo</a>
+      <a href="#">Community</a>
+    </div>
+    <div class="footer-col">
+      <h4>Company</h4>
+      <a href="#">About Us</a>
+      <a href="#">Blog</a>
+      <a href="#">Careers</a>
+      <a href="#">Contact</a>
+    </div>
+    <div class="footer-col">
+      <h4>Legal</h4>
+      <a href="#">Privacy Policy</a>
+      <a href="#">Terms of Service</a>
+      <a href="#">Cookie Policy</a>
+      <a href="#">GDPR</a>
+    </div>
+  </div>
+  <div class="footer-bottom">
+    <p>© 2025 Sigma Testing AI Agent. All Rights Reserved. Made with ❤️ for QA Engineers worldwide.</p>
+    <div class="footer-app-btns">
+      <button class="app-btn">🍎 App Store</button>
+      <button class="app-btn">▶ Google Play</button>
+    </div>
+  </div>
+</footer>
+
+<!-- ══════════════ AI CHAT ══════════════ -->
+<div class="ai-chat">
+  <div class="chat-window" id="chatWindow">
+    <div class="chat-header">
+      <div style="width:28px;height:28px;background:linear-gradient(135deg,var(--acid),var(--acid2));border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:14px;">Σ</div>
+      <div>
+        <div style="font-size:12px;font-weight:600;">Sigma AI</div>
+        <div style="font-size:10px;color:var(--text3);">Powered by LLaMA 3.1 (Groq)</div>
+      </div>
+    </div>
+    <div class="chat-messages" id="chatMessages">
+      <div class="chat-msg ai">👋 Hi! I'm your Sigma Testing AI. Ask me to generate tests, analyze bugs, or explain security findings.</div>
+    </div>
+    <div class="chat-input-row">
+      <input type="text" id="chatInput" placeholder="Ask AI…" onkeydown="if(event.key==='Enter')sendChat()"/>
+      <button class="chat-send" onclick="sendChat()">↑</button>
+    </div>
+  </div>
+  <div class="chat-bubble" onclick="toggleChat()">Σ</div>
+</div>
+
+<!-- ══════════════ MODALS ══════════════ -->
+<div class="modal-overlay" id="subscribeModal" onclick="closeModalOutside(event,'subscribeModal')">
+  <div class="modal">
+    <button class="modal-close" onclick="closeModal('subscribeModal')">✕</button>
+    <h3>Stay Updated ✦</h3>
+    <p>Get the latest Sigma features, AI testing tips, and security advisories.</p>
+    <input type="text" placeholder="Your Name"/>
+    <input type="email" placeholder="your@email.com"/>
+    <button class="btn btn-primary" style="width:100%;justify-content:center;" onclick="closeModal('subscribeModal')">🚀 Subscribe Free</button>
+  </div>
+</div>
+
+<div class="modal-overlay" id="signinModal" onclick="closeModalOutside(event,'signinModal')">
+  <div class="modal">
+    <button class="modal-close" onclick="closeModal('signinModal')">✕</button>
+    <h3>Sign In to Sigma</h3>
+    <p>Access your AI testing workspace from anywhere.</p>
+    <button class="btn btn-ghost" style="width:100%;justify-content:center;margin-bottom:8px;height:42px;">🔵 Continue with Google</button>
+    <button class="btn btn-ghost" style="width:100%;justify-content:center;margin-bottom:16px;height:42px;">⚫ Continue with GitHub</button>
+    <div style="text-align:center;font-size:11px;color:var(--text3);margin-bottom:12px;">or</div>
+    <input type="email" placeholder="Email address"/>
+    <button class="btn btn-primary" style="width:100%;justify-content:center;" onclick="closeModal('signinModal')">Send Magic Link ✉</button>
+  </div>
+</div>
+
+<script>
+// ══════════ CLOCK ══════════
+function updateClock() {
+  const now = new Date();
+  const ist = new Date(now.toLocaleString('en', {timeZone:'Asia/Kolkata'}));
+  const h = String(ist.getHours()).padStart(2,'0');
+  const m = String(ist.getMinutes()).padStart(2,'0');
+  const s = String(ist.getSeconds()).padStart(2,'0');
+  document.getElementById('clock').textContent = `⏱ IST ${h}:${m}:${s}`;
+}
+setInterval(updateClock, 1000);
+updateClock();
+
+// ══════════ NAVIGATION ══════════
+function navigate(page) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  const pg = document.getElementById('page-'+page);
+  if(pg) pg.classList.add('active');
+  document.querySelectorAll('.nav-item').forEach(n => {
+    if(n.textContent.trim().toLowerCase().includes(
+      page==='dashboard'?'dashboard':
+      page==='generator'?'generator':
+      page==='bugdetect'?'bug':
+      page==='security'?'security':
+      page==='network'?'network':
+      page==='crawler'?'crawler':
+      page==='reports'?'reports':
+      page==='settings'?'settings':
+      page==='scheduler'?'scheduler':
+      page==='devices'?'device':
+      page==='healer'?'healer':
+      page==='debugger'?'debugger':
+      page==='accessibility'?'access':
+      page==='performance'?'perf':
+      page==='visual'?'visual':
+      page==='executor'?'executor':
+      page
+    )) n.classList.add('active');
+  });
+  window.scrollTo(0,0);
+}
+
+// ══════════ MODALS ══════════
+function openModal(id){document.getElementById(id).classList.add('open');}
+function closeModal(id){document.getElementById(id).classList.remove('open');}
+function closeModalOutside(e,id){if(e.target===document.getElementById(id))closeModal(id);}
+
+// ══════════ CHAT ══════════
+function toggleChat(){document.getElementById('chatWindow').classList.toggle('open');}
+const aiReplies=[
+  "I can generate Playwright tests for that URL in under 10 seconds. Want me to include security assertions too?",
+  "Detected 3 XSS vulnerabilities in that form. I recommend using DOMPurify.sanitize() on all user inputs.",
+  "The broken selector can be healed using getByRole('button', {name: 'Submit'}) — 97% confidence match.",
+  "Based on the failure pattern, this looks like a race condition. Add page.waitForSelector() before the click.",
+  "I've analyzed 1,248 similar failures. The root cause is typically an async state update not being awaited.",
+  "Your test coverage gap is in the /checkout/payment endpoint. I can generate 12 edge-case tests now.",
+];
+let replyIdx=0;
+function sendChat(){
+  const inp=document.getElementById('chatInput');
+  const msgs=document.getElementById('chatMessages');
+  if(!inp.value.trim())return;
+  const userMsg=document.createElement('div');
+  userMsg.className='chat-msg user';
+  userMsg.textContent=inp.value;
+  msgs.appendChild(userMsg);
+  inp.value='';
+  setTimeout(()=>{
+    const aiMsg=document.createElement('div');
+    aiMsg.className='chat-msg ai';
+    aiMsg.textContent=aiReplies[replyIdx%aiReplies.length];
+    replyIdx++;
+    msgs.appendChild(aiMsg);
+    msgs.scrollTop=msgs.scrollHeight;
+  },800);
+  msgs.scrollTop=msgs.scrollHeight;
+}
+
+// ══════════ CHIP TOGGLE ══════════
+function toggleChip(el){el.classList.toggle('selected');}
+function switchTab(el,name){
+  el.parentElement.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+  el.classList.add('active');
+}
+
+// ══════════ BUG SCAN ANIMATION ══════════
+function startBugScan(){
+  const progress=document.getElementById('scanProgress');
+  const bar=document.getElementById('scanBar');
+  const status=document.getElementById('scanStatus');
+  const pct=document.getElementById('scanPct');
+  progress.style.display='block';
+  const statuses=['Initializing AI agents…','Crawling DOM tree…','Analyzing HTTP headers…','Scanning for XSS vectors…','Testing SQL injection points…','Checking CORS configuration…','Analyzing auth tokens…','Running OWASP checks…','Generating AI report…','Scan complete!'];
+  let i=0;
+  const interval=setInterval(()=>{
+    const p=Math.round((i/statuses.length)*100);
+    bar.style.width=p+'%';
+    pct.textContent=p+'%';
+    status.textContent=statuses[i]||'Complete!';
+    i++;
+    if(i>statuses.length){clearInterval(interval);}
+  },400);
+}
+
+// ══════════ GENERATE TESTS ══════════
+function generateTests(){
+  const prog=document.getElementById('genProgress');
+  prog.style.display='block';
+  setTimeout(()=>prog.style.display='none',2000);
+}
+
+// ══════════ LIVE METRICS ANIMATION ══════════
+setInterval(()=>{
+  const el=document.getElementById('m-pass');
+  if(el) el.textContent=(parseInt(el.textContent.replace(',',''))+Math.floor(Math.random()*3)).toLocaleString();
+},5000);
+
+// ══════════ SECURITY SCAN ══════════
+function securityScan(){
+  const term=document.querySelector('.terminal');
+  if(term){
+    const line=document.createElement('div');
+    line.className='t-line';
+    line.innerHTML='<span class="t-prompt">sigma@ai ~$ </span><span class="t-cmd">sigma scan --owasp --deep</span>';
+    term.appendChild(line);
+    setTimeout(()=>{
+      const l2=document.createElement('div');
+      l2.className='t-line';
+      l2.innerHTML='<span class="t-warn">⚠ Scanning attack surface…</span>';
+      term.appendChild(l2);
+      term.scrollTop=term.scrollHeight;
+    },300);
+  }
+}
+
+// ══════════ CRAWL ══════════
+function startCrawl(){
+  startBugScan();
+}
+
+// ══════════ COPY CODE ══════════
+function copyCode(){
+  const code=document.getElementById('codeOutput').innerText;
+  navigator.clipboard?.writeText(code);
+  alert('Code copied to clipboard!');
+}
+
+function runCode(){
+  const term=document.getElementById('genTerminal');
+  const line=document.createElement('div');
+  line.className='t-line';
+  line.innerHTML='<span class="t-prompt">sigma@ai ~$ </span><span class="t-cmd">sigma run --file generated_test.py</span>';
+  term.appendChild(line);
+  setTimeout(()=>{
+    ['Starting Playwright…','→ test_valid_login PASS ✓','→ test_invalid_login PASS ✓','→ test_empty_fields PASS ✓','All 3 tests passed in 4.2s'].forEach((txt,i)=>{
+      setTimeout(()=>{
+        const l=document.createElement('div');
+        l.className='t-line';
+        l.innerHTML=`<span class="${txt.includes('PASS')||txt.includes('passed')?'t-ok':txt.includes('→')?'t-info':'t-out'}">${txt}</span>`;
+        term.appendChild(l);
+        term.scrollTop=term.scrollHeight;
+      },i*300);
+    });
+  },400);
+}
+
+function runScan(){
+  const el=document.getElementById('m-urls');
+  if(el) el.textContent=(parseInt(el.textContent.replace(',',''))+Math.floor(Math.random()*50+10)).toLocaleString();
+}
+
+// ══════════ NOTIF DROPDOWN ══════════
+function toggleNotif(){
+  alert('Notifications:\n\n● BUG-001 Critical XSS found\n● Test suite "Regression" completed: 96.1% pass\n● Locator healer fixed 3 broken selectors\n● Scheduled job "Daily Regression" starting in 2h');
+}
+
+// ══════════ KEYBOARD SHORTCUT ══════════
+document.addEventListener('keydown',e=>{
+  if((e.metaKey||e.ctrlKey)&&e.key==='k'){
+    e.preventDefault();
+    document.querySelector('#globalSearch')?.focus();
+  }
+  if(e.key==='Escape'){
+    document.querySelectorAll('.modal-overlay.open').forEach(m=>m.classList.remove('open'));
+  }
+});
+</script>
+</body>
+</html>

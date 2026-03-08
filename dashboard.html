@@ -1,0 +1,2161 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Σ SIGMA — AI Testing Agent</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Outfit:wght@300;400;500;600;700;900&family=JetBrains+Mono:wght@300;400;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg-void:     #03030a;
+    --bg-deep:     #070712;
+    --bg-panel:    #0d0d1f;
+    --bg-card:     #111128;
+    --bg-hover:    #161635;
+    --border:      #1e1e4a;
+    --border-hi:   #3030a0;
+    --accent-cyan: #00f5d4;
+    --accent-pink: #ff2d78;
+    --accent-gold: #ffd93d;
+    --accent-blue: #4d7cfe;
+    --accent-violet:#a855f7;
+    --accent-orange:#ff6b35;
+    --text-hi:     #f0f0ff;
+    --text-md:     #9090c0;
+    --text-lo:     #4a4a7a;
+    --pass:        #00f5a0;
+    --fail:        #ff2d78;
+    --warn:        #ffd93d;
+    --info:        #4d7cfe;
+    --glow-cyan:   0 0 20px rgba(0,245,212,0.35);
+    --glow-pink:   0 0 20px rgba(255,45,120,0.35);
+    --glow-gold:   0 0 20px rgba(255,217,61,0.35);
+    --radius:      12px;
+    --radius-sm:   8px;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    font-family: 'Outfit', sans-serif;
+    background: var(--bg-void);
+    color: var(--text-hi);
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* ─── SCANLINE OVERLAY ─── */
+  body::before {
+    content: '';
+    position: fixed; inset: 0;
+    background: repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,245,212,0.012) 2px, rgba(0,245,212,0.012) 4px);
+    pointer-events: none; z-index: 9999;
+  }
+
+  /* ─── NOISE TEXTURE ─── */
+  body::after {
+    content: '';
+    position: fixed; inset: 0;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.03'/%3E%3C/svg%3E");
+    pointer-events: none; z-index: 9998; opacity: 0.4;
+  }
+
+  /* ─── SCROLLBAR ─── */
+  ::-webkit-scrollbar { width: 4px; }
+  ::-webkit-scrollbar-track { background: var(--bg-void); }
+  ::-webkit-scrollbar-thumb { background: var(--border-hi); border-radius: 2px; }
+
+  /* ─── LAYOUT ─── */
+  .app-shell {
+    display: grid;
+    grid-template-rows: 64px 1fr;
+    grid-template-columns: 240px 1fr;
+    grid-template-areas: "header header" "sidebar main";
+    height: 100vh;
+  }
+
+  /* ══════════════════════════════════════
+     HEADER
+  ══════════════════════════════════════ */
+  header {
+    grid-area: header;
+    background: rgba(7,7,18,0.95);
+    backdrop-filter: blur(20px);
+    border-bottom: 1px solid var(--border);
+    display: flex; align-items: center;
+    padding: 0 20px; gap: 16px;
+    position: sticky; top: 0; z-index: 100;
+  }
+
+  .logo {
+    display: flex; align-items: center; gap: 10px;
+    text-decoration: none; flex-shrink: 0;
+  }
+  .logo-sigma {
+    font-family: 'Space Mono', monospace;
+    font-size: 22px; font-weight: 700;
+    background: linear-gradient(135deg, var(--accent-cyan), var(--accent-blue), var(--accent-violet));
+    -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent;
+    text-shadow: none;
+    filter: drop-shadow(0 0 12px rgba(0,245,212,0.6));
+    animation: logoGlow 3s ease-in-out infinite alternate;
+  }
+  @keyframes logoGlow {
+    from { filter: drop-shadow(0 0 8px rgba(0,245,212,0.5)); }
+    to   { filter: drop-shadow(0 0 20px rgba(77,124,254,0.8)); }
+  }
+  .logo-sub { font-size: 9px; letter-spacing: 3px; color: var(--text-md); line-height: 1; font-weight: 400; }
+
+  .header-search {
+    flex: 1; max-width: 400px;
+    display: flex; align-items: center; gap: 8px;
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: 6px 12px;
+    cursor: text; transition: border-color .2s, box-shadow .2s;
+  }
+  .header-search:hover, .header-search:focus-within {
+    border-color: var(--accent-cyan);
+    box-shadow: 0 0 0 2px rgba(0,245,212,0.15);
+  }
+  .header-search input {
+    background: none; border: none; outline: none;
+    color: var(--text-hi); font-family: inherit; font-size: 13px; width: 100%;
+  }
+  .header-search input::placeholder { color: var(--text-lo); }
+  .search-kbd {
+    font-family: 'JetBrains Mono', monospace; font-size: 10px;
+    color: var(--text-lo); border: 1px solid var(--border);
+    border-radius: 4px; padding: 1px 5px; white-space: nowrap;
+  }
+
+  .header-right {
+    margin-left: auto;
+    display: flex; align-items: center; gap: 8px;
+  }
+
+  .live-clock {
+    font-family: 'JetBrains Mono', monospace; font-size: 11px;
+    color: var(--accent-cyan); background: rgba(0,245,212,0.08);
+    border: 1px solid rgba(0,245,212,0.2);
+    border-radius: var(--radius-sm); padding: 4px 10px;
+    display: flex; align-items: center; gap: 6px;
+  }
+  .clock-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--accent-cyan); animation: blink 1s infinite; }
+  @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.2} }
+
+  .social-links { display: flex; gap: 4px; }
+  .social-btn {
+    width: 30px; height: 30px; border-radius: var(--radius-sm);
+    display: flex; align-items: center; justify-content: center;
+    background: var(--bg-card); border: 1px solid var(--border);
+    color: var(--text-md); cursor: pointer; font-size: 12px;
+    transition: all .2s; text-decoration: none;
+  }
+  .social-btn:hover { color: var(--accent-cyan); border-color: var(--accent-cyan); transform: translateY(-1px); }
+
+  .sub-btn {
+    padding: 6px 14px; border-radius: var(--radius-sm);
+    background: linear-gradient(135deg, var(--accent-cyan), var(--accent-blue));
+    color: var(--bg-void); font-size: 12px; font-weight: 700;
+    border: none; cursor: pointer; letter-spacing: 0.5px;
+    transition: opacity .2s, transform .2s;
+  }
+  .sub-btn:hover { opacity: 0.85; transform: translateY(-1px); }
+
+  .badge-pro {
+    padding: 3px 10px; border-radius: 20px; font-size: 10px; font-weight: 700;
+    background: linear-gradient(135deg, var(--accent-violet), var(--accent-pink));
+    color: white; letter-spacing: 1px;
+  }
+
+  .notif-btn {
+    position: relative; width: 32px; height: 32px;
+    border-radius: var(--radius-sm); border: 1px solid var(--border);
+    background: var(--bg-card); cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    color: var(--text-md); font-size: 14px; transition: all .2s;
+  }
+  .notif-btn:hover { color: var(--accent-gold); border-color: var(--accent-gold); }
+  .notif-dot {
+    position: absolute; top: 5px; right: 5px;
+    width: 7px; height: 7px; border-radius: 50%; background: var(--fail);
+    border: 1.5px solid var(--bg-deep); animation: pulseDot 2s infinite;
+  }
+  @keyframes pulseDot { 0%,100%{transform:scale(1)} 50%{transform:scale(1.3)} }
+
+  .avatar-btn {
+    width: 32px; height: 32px; border-radius: 50%;
+    background: linear-gradient(135deg, var(--accent-violet), var(--accent-blue));
+    border: 2px solid var(--accent-cyan); cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 12px; font-weight: 700; color: white;
+    transition: box-shadow .2s;
+  }
+  .avatar-btn:hover { box-shadow: var(--glow-cyan); }
+
+  /* ══════════════════════════════════════
+     SIDEBAR
+  ══════════════════════════════════════ */
+  aside {
+    grid-area: sidebar;
+    background: var(--bg-deep);
+    border-right: 1px solid var(--border);
+    overflow-y: auto; padding: 16px 0;
+    display: flex; flex-direction: column; gap: 4px;
+  }
+
+  .nav-section { padding: 12px 16px 4px; }
+  .nav-section-label {
+    font-size: 9px; font-weight: 600; letter-spacing: 2px;
+    color: var(--text-lo); text-transform: uppercase;
+  }
+
+  .nav-item {
+    display: flex; align-items: center; gap: 10px;
+    padding: 9px 16px; margin: 1px 8px;
+    border-radius: var(--radius-sm); cursor: pointer;
+    transition: all .15s; color: var(--text-md);
+    font-size: 13px; font-weight: 400; position: relative;
+    border: 1px solid transparent;
+  }
+  .nav-item:hover {
+    background: var(--bg-card); color: var(--text-hi);
+    border-color: var(--border);
+  }
+  .nav-item.active {
+    background: rgba(0,245,212,0.08); color: var(--accent-cyan);
+    border-color: rgba(0,245,212,0.25);
+  }
+  .nav-item.active::before {
+    content: ''; position: absolute; left: -8px; top: 50%;
+    transform: translateY(-50%);
+    width: 3px; height: 20px; background: var(--accent-cyan);
+    border-radius: 0 2px 2px 0; box-shadow: var(--glow-cyan);
+  }
+  .nav-icon { font-size: 15px; width: 18px; text-align: center; }
+  .nav-badge {
+    margin-left: auto; font-size: 9px; font-weight: 700;
+    padding: 2px 7px; border-radius: 20px;
+  }
+  .nav-badge.live { background: rgba(0,245,212,0.15); color: var(--accent-cyan); }
+  .nav-badge.fail { background: rgba(255,45,120,0.15); color: var(--fail); }
+  .nav-badge.new  { background: rgba(168,85,247,0.15); color: var(--accent-violet); }
+
+  .sidebar-footer {
+    margin-top: auto; padding: 12px 16px;
+    border-top: 1px solid var(--border);
+  }
+  .system-health {
+    background: var(--bg-card); border: 1px solid var(--border);
+    border-radius: var(--radius-sm); padding: 10px; font-size: 11px;
+  }
+  .health-row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px; }
+  .health-label { color: var(--text-md); }
+  .health-dot { width: 6px; height: 6px; border-radius: 50%; }
+  .health-dot.ok { background: var(--pass); box-shadow: 0 0 6px var(--pass); }
+  .health-dot.warn { background: var(--warn); }
+  .health-dot.bad { background: var(--fail); }
+
+  /* ══════════════════════════════════════
+     MAIN CONTENT
+  ══════════════════════════════════════ */
+  main {
+    grid-area: main;
+    overflow-y: auto;
+    background: var(--bg-void);
+  }
+
+  .page { display: none; padding: 24px; animation: fadeIn .25s ease; }
+  .page.active { display: block; }
+  @keyframes fadeIn { from { opacity:0; transform:translateY(8px); } to { opacity:1; transform:none; } }
+
+  .page-header { margin-bottom: 24px; }
+  .page-title { font-size: 22px; font-weight: 700; letter-spacing: -0.5px; }
+  .page-sub { font-size: 13px; color: var(--text-md); margin-top: 4px; }
+  .page-actions { display: flex; gap: 8px; margin-top: 14px; }
+
+  /* ─── CARDS ─── */
+  .card {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 18px;
+  }
+  .card-title {
+    font-size: 11px; font-weight: 600; letter-spacing: 1.5px;
+    color: var(--text-md); text-transform: uppercase; margin-bottom: 14px;
+  }
+
+  /* ─── METRIC GRID ─── */
+  .metric-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; margin-bottom: 20px; }
+
+  .metric-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 16px; position: relative; overflow: hidden;
+    transition: border-color .2s, box-shadow .2s;
+    cursor: default;
+  }
+  .metric-card::before {
+    content: '';
+    position: absolute; top: 0; left: 0; right: 0; height: 2px;
+    background: var(--m-color, var(--accent-cyan));
+    opacity: 0.8;
+  }
+  .metric-card::after {
+    content: '';
+    position: absolute; top: -40px; right: -20px;
+    width: 80px; height: 80px; border-radius: 50%;
+    background: var(--m-color, var(--accent-cyan));
+    opacity: 0.04; transition: opacity .3s;
+  }
+  .metric-card:hover { border-color: var(--m-color, var(--accent-cyan)); box-shadow: 0 0 20px rgba(0,0,0,0.4); }
+  .metric-card:hover::after { opacity: 0.1; }
+
+  .m-label { font-size: 10px; letter-spacing: 1.5px; color: var(--text-md); text-transform: uppercase; font-weight: 600; }
+  .m-value { font-size: 32px; font-weight: 700; font-family: 'JetBrains Mono', monospace; margin: 6px 0 2px; line-height: 1; }
+  .m-delta { font-size: 11px; color: var(--text-md); display: flex; align-items: center; gap: 4px; }
+  .m-delta .up { color: var(--pass); }
+  .m-delta .dn { color: var(--fail); }
+  .m-icon { position: absolute; top: 14px; right: 14px; font-size: 20px; opacity: 0.4; }
+
+  /* ─── GRID LAYOUTS ─── */
+  .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 14px; }
+  .grid-60-40 { display: grid; grid-template-columns: 1fr 0.65fr; gap: 14px; }
+
+  /* ─── BUTTONS ─── */
+  .btn {
+    display: inline-flex; align-items: center; gap: 7px;
+    padding: 8px 16px; border-radius: var(--radius-sm);
+    font-family: inherit; font-size: 13px; font-weight: 600;
+    cursor: pointer; transition: all .2s; border: none;
+    white-space: nowrap;
+  }
+  .btn-primary {
+    background: linear-gradient(135deg, var(--accent-cyan), var(--accent-blue));
+    color: var(--bg-void);
+    box-shadow: 0 2px 12px rgba(0,245,212,0.25);
+  }
+  .btn-primary:hover { opacity: 0.88; transform: translateY(-1px); box-shadow: 0 4px 20px rgba(0,245,212,0.4); }
+  .btn-danger {
+    background: linear-gradient(135deg, var(--fail), var(--accent-pink));
+    color: white;
+  }
+  .btn-danger:hover { opacity: 0.88; transform: translateY(-1px); }
+  .btn-ghost {
+    background: var(--bg-card); color: var(--text-md);
+    border: 1px solid var(--border);
+  }
+  .btn-ghost:hover { color: var(--text-hi); border-color: var(--border-hi); }
+  .btn-gold {
+    background: linear-gradient(135deg, var(--accent-gold), var(--accent-orange));
+    color: var(--bg-void);
+  }
+  .btn-violet {
+    background: linear-gradient(135deg, var(--accent-violet), var(--accent-blue));
+    color: white;
+  }
+  .btn-sm { padding: 5px 11px; font-size: 11px; }
+  .btn-lg { padding: 11px 24px; font-size: 14px; }
+
+  /* ─── STATUS BADGES ─── */
+  .badge {
+    display: inline-flex; align-items: center; gap: 5px;
+    padding: 3px 9px; border-radius: 20px; font-size: 11px; font-weight: 600;
+  }
+  .badge-pass { background: rgba(0,245,160,0.12); color: var(--pass); }
+  .badge-fail { background: rgba(255,45,120,0.12); color: var(--fail); }
+  .badge-warn { background: rgba(255,217,61,0.12); color: var(--warn); }
+  .badge-info { background: rgba(77,124,254,0.12); color: var(--info); }
+  .badge-run  { background: rgba(0,245,212,0.12); color: var(--accent-cyan); }
+  .badge::before { content: ''; width: 5px; height: 5px; border-radius: 50%; background: currentColor; }
+
+  /* ─── AGENT PANELS ─── */
+  .agent-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; margin-bottom: 20px; }
+
+  .agent-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 14px; text-align: center;
+    transition: all .2s; cursor: default;
+    position: relative; overflow: hidden;
+  }
+  .agent-card.online { border-color: rgba(0,245,160,0.3); }
+  .agent-card.busy   { border-color: rgba(255,217,61,0.3); }
+  .agent-card.error  { border-color: rgba(255,45,120,0.3); }
+  .agent-card::before {
+    content: ''; position: absolute; bottom: 0; left: 0; right: 0;
+    height: 2px; background: var(--a-color, var(--accent-cyan));
+    transform: scaleX(var(--a-progress, 0)); transform-origin: left;
+    transition: transform 2s ease;
+  }
+  .agent-icon { font-size: 22px; margin-bottom: 8px; }
+  .agent-name { font-size: 11px; font-weight: 700; letter-spacing: 0.5px; margin-bottom: 4px; }
+  .agent-status-txt { font-size: 10px; color: var(--text-md); }
+  .agent-pulse {
+    width: 8px; height: 8px; border-radius: 50%;
+    margin: 8px auto 0; background: var(--pass);
+    animation: agentPulse 2s infinite;
+  }
+  .agent-pulse.busy { background: var(--warn); animation-duration: .6s; }
+  .agent-pulse.error { background: var(--fail); animation: none; }
+  @keyframes agentPulse {
+    0%,100%{ transform:scale(1); opacity:1; box-shadow:0 0 0 0 currentColor; }
+    50%{ transform:scale(1.15); box-shadow:0 0 0 4px rgba(0,245,160,0.15); }
+  }
+
+  /* ─── TEST RUN TABLE ─── */
+  .table-wrap { overflow-x: auto; }
+  table { width: 100%; border-collapse: collapse; font-size: 12px; }
+  th {
+    padding: 10px 12px; text-align: left;
+    font-size: 9px; font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase;
+    color: var(--text-lo); border-bottom: 1px solid var(--border);
+  }
+  td { padding: 10px 12px; border-bottom: 1px solid rgba(30,30,74,0.5); }
+  tr:hover td { background: var(--bg-hover); }
+  tr:last-child td { border-bottom: none; }
+  .td-url { color: var(--accent-blue); font-family: 'JetBrains Mono', monospace; font-size: 11px; max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .td-framework { color: var(--text-md); }
+  .td-time { font-family: 'JetBrains Mono', monospace; color: var(--text-md); }
+
+  /* ─── CHART ─── */
+  .chart-bar-wrap { display: flex; align-items: flex-end; gap: 5px; height: 80px; padding: 0 4px; }
+  .chart-bar {
+    flex: 1; border-radius: 3px 3px 0 0;
+    background: var(--b-color, var(--accent-cyan));
+    opacity: 0.7; transition: opacity .2s, transform .2s;
+    min-height: 4px; animation: barGrow .8s ease backwards;
+    animation-delay: var(--d, 0s);
+  }
+  .chart-bar:hover { opacity: 1; transform: scaleY(1.05); transform-origin: bottom; }
+  @keyframes barGrow { from { transform: scaleY(0); transform-origin: bottom; } }
+
+  /* ─── PROGRESS BAR ─── */
+  .progress-bar {
+    height: 6px; background: var(--bg-panel); border-radius: 3px; overflow: hidden;
+  }
+  .progress-fill {
+    height: 100%; background: var(--p-color, var(--accent-cyan));
+    border-radius: 3px; transition: width 1s ease;
+    box-shadow: 0 0 8px var(--p-color, var(--accent-cyan));
+  }
+
+  /* ─── TERMINAL ─── */
+  .terminal {
+    background: #010108; border: 1px solid var(--border);
+    border-radius: var(--radius); padding: 16px;
+    font-family: 'JetBrains Mono', monospace; font-size: 12px;
+    line-height: 1.7; height: 260px; overflow-y: auto;
+  }
+  .terminal .t-pass { color: var(--pass); }
+  .terminal .t-fail { color: var(--fail); }
+  .terminal .t-warn { color: var(--warn); }
+  .terminal .t-info { color: var(--info); }
+  .terminal .t-dim  { color: var(--text-lo); }
+  .terminal .t-cyan { color: var(--accent-cyan); }
+  .terminal .t-head { color: var(--accent-gold); font-weight: 700; }
+  .terminal .t-path { color: var(--accent-violet); }
+  .term-cursor { display: inline-block; width: 8px; height: 14px; background: var(--accent-cyan); animation: termBlink .8s step-end infinite; vertical-align: middle; }
+  @keyframes termBlink { 0%,100%{opacity:1} 50%{opacity:0} }
+
+  .term-input-row { display: flex; align-items: center; gap: 8px; margin-top: 12px; }
+  .term-prompt { color: var(--accent-cyan); font-family: 'JetBrains Mono', monospace; font-size: 13px; white-space: nowrap; }
+  .term-input {
+    flex: 1; background: none; border: none; outline: none;
+    color: var(--text-hi); font-family: 'JetBrains Mono', monospace; font-size: 13px;
+  }
+
+  /* ─── CODE EDITOR ─── */
+  .code-editor {
+    background: #010108; border: 1px solid var(--border);
+    border-radius: var(--radius); overflow: hidden;
+  }
+  .code-editor-header {
+    background: var(--bg-card); padding: 8px 14px;
+    display: flex; align-items: center; gap: 8px;
+    border-bottom: 1px solid var(--border); font-size: 11px;
+  }
+  .code-editor-header .dots { display: flex; gap: 6px; }
+  .code-editor-header .dot { width: 10px; height: 10px; border-radius: 50%; }
+  .code-editor-header .dot.r { background: #ff5f57; }
+  .code-editor-header .dot.y { background: #febc2e; }
+  .code-editor-header .dot.g { background: #28c840; }
+  .code-editor-tabs { display: flex; gap: 2px; margin-left: 4px; }
+  .editor-tab {
+    padding: 3px 12px; font-size: 11px; border-radius: var(--radius-sm) var(--radius-sm) 0 0;
+    color: var(--text-md); cursor: pointer;
+  }
+  .editor-tab.active { background: #010108; color: var(--accent-cyan); }
+  .code-body { padding: 16px; min-height: 180px; overflow-x: auto; }
+  .code-body pre {
+    font-family: 'JetBrains Mono', monospace; font-size: 12px;
+    line-height: 1.75; color: var(--text-hi); margin: 0;
+  }
+  .kw  { color: var(--accent-violet); }
+  .fn  { color: var(--accent-cyan); }
+  .str { color: var(--accent-gold); }
+  .cmt { color: var(--text-lo); font-style: italic; }
+  .num { color: var(--accent-orange); }
+  .cls { color: var(--accent-blue); }
+
+  /* ─── FORM ELEMENTS ─── */
+  .form-group { margin-bottom: 14px; }
+  .form-label { font-size: 11px; font-weight: 600; color: var(--text-md); letter-spacing: 1px; text-transform: uppercase; margin-bottom: 6px; display: block; }
+  .form-input, .form-select, .form-textarea {
+    width: 100%; padding: 9px 12px;
+    background: var(--bg-panel); border: 1px solid var(--border);
+    border-radius: var(--radius-sm); color: var(--text-hi);
+    font-family: inherit; font-size: 13px;
+    transition: border-color .2s, box-shadow .2s; outline: none;
+  }
+  .form-input:focus, .form-select:focus, .form-textarea:focus {
+    border-color: var(--accent-cyan);
+    box-shadow: 0 0 0 2px rgba(0,245,212,0.12);
+  }
+  .form-select { cursor: pointer; }
+  .form-select option { background: var(--bg-panel); }
+  .form-textarea { resize: vertical; min-height: 80px; }
+
+  /* ─── TABS ─── */
+  .tab-bar { display: flex; gap: 2px; border-bottom: 1px solid var(--border); margin-bottom: 20px; }
+  .tab {
+    padding: 9px 16px; font-size: 12px; font-weight: 500;
+    color: var(--text-md); cursor: pointer; border-bottom: 2px solid transparent;
+    transition: all .15s; white-space: nowrap;
+  }
+  .tab:hover { color: var(--text-hi); }
+  .tab.active { color: var(--accent-cyan); border-bottom-color: var(--accent-cyan); }
+
+  /* ─── CHECKBOX GROUP ─── */
+  .check-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+  .check-item { display: flex; align-items: center; gap: 8px; font-size: 12px; cursor: pointer; }
+  .check-item input[type=checkbox] { accent-color: var(--accent-cyan); width: 14px; height: 14px; cursor: pointer; }
+
+  /* ─── INSIGHT CARD ─── */
+  .insight-card {
+    background: linear-gradient(135deg, rgba(0,245,212,0.05), rgba(77,124,254,0.05));
+    border: 1px solid rgba(0,245,212,0.2);
+    border-radius: var(--radius); padding: 14px; margin-bottom: 10px;
+  }
+  .insight-title { font-size: 12px; font-weight: 700; color: var(--accent-cyan); margin-bottom: 4px; display: flex; align-items: center; gap: 6px; }
+  .insight-body { font-size: 12px; color: var(--text-md); line-height: 1.6; }
+
+  /* ─── AI CHAT ─── */
+  .chat-widget {
+    position: fixed; bottom: 20px; right: 20px; z-index: 500;
+  }
+  .chat-fab {
+    width: 52px; height: 52px; border-radius: 50%;
+    background: linear-gradient(135deg, var(--accent-cyan), var(--accent-blue));
+    border: none; cursor: pointer; font-size: 22px;
+    box-shadow: 0 4px 20px rgba(0,245,212,0.4);
+    transition: transform .2s, box-shadow .2s;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .chat-fab:hover { transform: scale(1.1); box-shadow: 0 6px 30px rgba(0,245,212,0.6); }
+  .chat-panel {
+    display: none; position: absolute; bottom: 62px; right: 0;
+    width: 320px; background: var(--bg-panel);
+    border: 1px solid var(--border); border-radius: var(--radius);
+    box-shadow: 0 20px 60px rgba(0,0,0,0.6); overflow: hidden;
+  }
+  .chat-panel.open { display: flex; flex-direction: column; }
+  .chat-header {
+    padding: 12px 16px; background: var(--bg-card);
+    border-bottom: 1px solid var(--border);
+    display: flex; align-items: center; gap: 8px;
+    font-weight: 600; font-size: 13px;
+  }
+  .chat-messages { flex: 1; height: 260px; overflow-y: auto; padding: 12px; display: flex; flex-direction: column; gap: 10px; }
+  .chat-msg { max-width: 85%; font-size: 12px; line-height: 1.5; padding: 8px 12px; border-radius: 10px; }
+  .chat-msg.bot { background: var(--bg-card); color: var(--text-hi); border-bottom-left-radius: 4px; align-self: flex-start; }
+  .chat-msg.user { background: var(--accent-blue); color: white; border-bottom-right-radius: 4px; align-self: flex-end; }
+  .chat-input-row { display: flex; gap: 8px; padding: 10px; border-top: 1px solid var(--border); }
+  .chat-input {
+    flex: 1; padding: 7px 10px; background: var(--bg-card);
+    border: 1px solid var(--border); border-radius: var(--radius-sm);
+    color: var(--text-hi); font-family: inherit; font-size: 12px; outline: none;
+  }
+  .chat-input:focus { border-color: var(--accent-cyan); }
+  .chat-send {
+    padding: 7px 12px; background: var(--accent-cyan); color: var(--bg-void);
+    border: none; border-radius: var(--radius-sm); cursor: pointer; font-weight: 700; font-size: 12px;
+    transition: opacity .2s;
+  }
+  .chat-send:hover { opacity: 0.8; }
+
+  /* ─── MODAL ─── */
+  .modal-overlay {
+    display: none; position: fixed; inset: 0;
+    background: rgba(0,0,0,0.7); backdrop-filter: blur(8px);
+    z-index: 1000; align-items: center; justify-content: center;
+  }
+  .modal-overlay.open { display: flex; }
+  .modal {
+    background: var(--bg-panel); border: 1px solid var(--border);
+    border-radius: var(--radius); padding: 24px; max-width: 480px; width: 90%;
+    animation: modalIn .2s ease;
+  }
+  @keyframes modalIn { from { opacity:0; transform:scale(0.9) translateY(-20px); } }
+  .modal-title { font-size: 16px; font-weight: 700; margin-bottom: 14px; }
+  .modal-close {
+    position: absolute; top: 16px; right: 16px;
+    background: none; border: none; color: var(--text-md); cursor: pointer; font-size: 18px;
+  }
+
+  /* ─── LOADING SPINNER ─── */
+  .spinner {
+    display: inline-block; width: 18px; height: 18px;
+    border: 2px solid rgba(0,245,212,0.2); border-top-color: var(--accent-cyan);
+    border-radius: 50%; animation: spin .7s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* ─── BUG SEVERITY ─── */
+  .sev-critical { color: #ff2020; font-weight: 700; }
+  .sev-high     { color: var(--fail); font-weight: 600; }
+  .sev-medium   { color: var(--warn); }
+  .sev-low      { color: var(--info); }
+  .sev-info     { color: var(--text-md); }
+
+  /* ─── DEVICE GRID ─── */
+  .device-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+  .device-card {
+    background: var(--bg-card); border: 1px solid var(--border);
+    border-radius: var(--radius); padding: 14px; cursor: pointer;
+    transition: all .2s; text-align: center;
+  }
+  .device-card:hover { border-color: var(--accent-blue); }
+  .device-card.selected { border-color: var(--accent-cyan); background: rgba(0,245,212,0.06); }
+  .device-icon { font-size: 28px; margin-bottom: 8px; }
+  .device-name { font-size: 12px; font-weight: 600; }
+  .device-spec { font-size: 10px; color: var(--text-lo); margin-top: 3px; }
+
+  /* ─── SECURITY SCANNER ─── */
+  .vuln-item {
+    display: flex; align-items: flex-start; gap: 12px;
+    padding: 12px; background: var(--bg-card);
+    border: 1px solid var(--border); border-radius: var(--radius-sm);
+    margin-bottom: 8px; transition: border-color .2s;
+  }
+  .vuln-item:hover { border-color: var(--fail); }
+  .vuln-icon { font-size: 18px; flex-shrink: 0; margin-top: 1px; }
+  .vuln-title { font-size: 13px; font-weight: 600; margin-bottom: 3px; }
+  .vuln-desc { font-size: 11px; color: var(--text-md); line-height: 1.5; }
+  .vuln-meta { display: flex; align-items: center; gap: 8px; margin-top: 6px; }
+
+  /* ─── NETWORK LOG ─── */
+  .net-row {
+    display: grid; grid-template-columns: 60px 80px 1fr 80px 80px 80px;
+    gap: 12px; align-items: center;
+    padding: 8px 12px; border-bottom: 1px solid rgba(30,30,74,0.5);
+    font-size: 11px; font-family: 'JetBrains Mono', monospace;
+    transition: background .15s; cursor: default;
+  }
+  .net-row:hover { background: var(--bg-hover); }
+  .net-method-get  { color: var(--pass); }
+  .net-method-post { color: var(--accent-blue); }
+  .net-method-put  { color: var(--warn); }
+  .net-method-del  { color: var(--fail); }
+  .net-status-ok   { color: var(--pass); }
+  .net-status-err  { color: var(--fail); }
+  .net-status-redir{ color: var(--warn); }
+
+  /* ─── NOTIFICATION DRAWER ─── */
+  .notif-drawer {
+    display: none; position: fixed; top: 64px; right: 0;
+    width: 320px; height: calc(100vh - 64px);
+    background: var(--bg-deep); border-left: 1px solid var(--border);
+    z-index: 200; overflow-y: auto; animation: slideIn .2s ease;
+  }
+  .notif-drawer.open { display: block; }
+  @keyframes slideIn { from { transform: translateX(100%); } }
+  .notif-header { padding: 14px 16px; border-bottom: 1px solid var(--border); font-weight: 700; font-size: 13px; display: flex; align-items: center; justify-content: space-between; }
+  .notif-item {
+    padding: 12px 16px; border-bottom: 1px solid rgba(30,30,74,0.5);
+    transition: background .15s; cursor: default;
+  }
+  .notif-item:hover { background: var(--bg-card); }
+  .notif-item-title { font-size: 12px; font-weight: 600; margin-bottom: 3px; }
+  .notif-item-body  { font-size: 11px; color: var(--text-md); line-height: 1.5; }
+  .notif-item-time  { font-size: 10px; color: var(--text-lo); margin-top: 4px; font-family: 'JetBrains Mono', monospace; }
+
+  /* ─── FOOTER ─── */
+  footer {
+    background: var(--bg-deep); border-top: 1px solid var(--border);
+    padding: 32px 40px 20px;
+  }
+  .footer-top {
+    display: grid; grid-template-columns: 2fr 1fr 1fr 1fr 1fr; gap: 40px;
+    margin-bottom: 28px;
+  }
+  .footer-brand .logo-sigma { font-size: 18px; }
+  .footer-tagline { font-size: 12px; color: var(--text-md); margin-top: 6px; line-height: 1.6; max-width: 220px; }
+  .footer-social { display: flex; gap: 8px; margin-top: 14px; }
+  .footer-col-title { font-size: 10px; font-weight: 700; letter-spacing: 2px; text-transform: uppercase; color: var(--text-md); margin-bottom: 14px; }
+  .footer-link { display: block; font-size: 12px; color: var(--text-md); text-decoration: none; margin-bottom: 8px; transition: color .15s; }
+  .footer-link:hover { color: var(--accent-cyan); }
+  .footer-bottom {
+    border-top: 1px solid var(--border); padding-top: 16px;
+    display: flex; align-items: center; justify-content: space-between;
+    font-size: 11px; color: var(--text-lo);
+  }
+  .footer-tech { display: flex; gap: 8px; }
+  .tech-pill {
+    padding: 2px 8px; border-radius: 20px; font-size: 9px; font-weight: 600; letter-spacing: 0.5px;
+    background: var(--bg-card); border: 1px solid var(--border); color: var(--text-md);
+  }
+
+  /* ─── CRAWL RESULT ─── */
+  .crawl-result-row {
+    display: grid; grid-template-columns: 30px 1fr 80px 80px 80px;
+    gap: 10px; align-items: center;
+    padding: 8px 12px; border-bottom: 1px solid rgba(30,30,74,0.5);
+    font-size: 11px;
+  }
+  .crawl-check { color: var(--pass); }
+  .crawl-fail  { color: var(--fail); }
+
+  /* ─── VISUAL DIFF ─── */
+  .visual-diff { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .diff-panel { border-radius: var(--radius); overflow: hidden; }
+  .diff-label { background: var(--bg-card); padding: 6px 12px; font-size: 10px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; color: var(--text-md); }
+  .diff-img-placeholder {
+    background: var(--bg-panel); aspect-ratio: 16/9;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 40px; color: var(--text-lo);
+    border: 1px solid var(--border);
+  }
+
+  /* ─── PERF GAUGE ─── */
+  .perf-gauge { display: flex; align-items: center; gap: 20px; flex-wrap: wrap; }
+  .gauge-item { text-align: center; }
+  .gauge-circle {
+    width: 72px; height: 72px; border-radius: 50%;
+    background: conic-gradient(var(--g-color, var(--accent-cyan)) var(--g-pct, 0%), var(--bg-panel) 0%);
+    display: flex; align-items: center; justify-content: center; position: relative; margin: 0 auto 6px;
+  }
+  .gauge-inner {
+    width: 54px; height: 54px; border-radius: 50%;
+    background: var(--bg-card);
+    display: flex; align-items: center; justify-content: center;
+    font-family: 'JetBrains Mono', monospace; font-size: 14px; font-weight: 700;
+  }
+  .gauge-label { font-size: 10px; color: var(--text-md); letter-spacing: 0.5px; }
+
+  /* Responsive */
+  @media (max-width: 1024px) {
+    .metric-grid { grid-template-columns: repeat(2, 1fr); }
+    .agent-grid { grid-template-columns: repeat(3, 1fr); }
+    .footer-top { grid-template-columns: 1fr 1fr; }
+    .grid-60-40 { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+
+<!-- ══════════════════════════════════════════════════
+     NOTIFICATION DRAWER
+══════════════════════════════════════════════════ -->
+<div class="notif-drawer" id="notifDrawer">
+  <div class="notif-header">
+    <span>🔔 Notifications</span>
+    <button class="btn btn-sm btn-ghost" onclick="document.getElementById('notifDrawer').classList.remove('open')">✕</button>
+  </div>
+  <div class="notif-item">
+    <div class="notif-item-title">🔴 CRITICAL Bug Detected</div>
+    <div class="notif-item-body">SQL Injection vulnerability found on /api/login endpoint — severity: CRITICAL</div>
+    <div class="notif-item-time">just now</div>
+  </div>
+  <div class="notif-item">
+    <div class="notif-item-title">✅ Test Suite Completed</div>
+    <div class="notif-item-body">Regression suite ran 247 tests: 241 pass, 6 fail. Report ready.</div>
+    <div class="notif-item-time">2 min ago</div>
+  </div>
+  <div class="notif-item">
+    <div class="notif-item-title">🔧 Locator Auto-Healed</div>
+    <div class="notif-item-body">#submit-btn was broken. AI healed to [data-testid="submit"]. 100% confidence.</div>
+    <div class="notif-item-time">8 min ago</div>
+  </div>
+  <div class="notif-item">
+    <div class="notif-item-title">⚡ AI Generated 12 Tests</div>
+    <div class="notif-item-body">Planner agent generated Playwright tests for https://shop.example.com</div>
+    <div class="notif-item-time">15 min ago</div>
+  </div>
+  <div class="notif-item">
+    <div class="notif-item-title">📊 Weekly Report Ready</div>
+    <div class="notif-item-body">Pass rate dropped 4.2% this week. 3 new critical issues. PDF attached.</div>
+    <div class="notif-item-time">1 hr ago</div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════
+     APP SHELL
+══════════════════════════════════════════════════ -->
+<div class="app-shell">
+
+  <!-- ════ HEADER ════ -->
+  <header>
+    <a class="logo" href="#">
+      <div>
+        <div class="logo-sigma">Σ SIGMA</div>
+        <div class="logo-sub">TESTING AI AGENT</div>
+      </div>
+    </a>
+
+    <div class="header-search">
+      <span style="color:var(--text-lo);font-size:13px">🔍</span>
+      <input type="text" placeholder="Search tests, URLs, reports, bugs..." id="globalSearch">
+      <span class="search-kbd">⌘K</span>
+    </div>
+
+    <div class="header-right">
+      <div class="live-clock">
+        <div class="clock-dot"></div>
+        <span id="liveClock">--:--:-- IST</span>
+      </div>
+
+      <div class="social-links">
+        <a class="social-btn" title="Twitter/X">𝕏</a>
+        <a class="social-btn" title="GitHub">⌥</a>
+        <a class="social-btn" title="LinkedIn">in</a>
+        <a class="social-btn" title="YouTube">▶</a>
+        <a class="social-btn" title="Discord">◈</a>
+      </div>
+
+      <button class="sub-btn" onclick="document.getElementById('subscribeModal').classList.add('open')">Subscribe</button>
+      <span class="badge-pro">PRO</span>
+
+      <button class="notif-btn" onclick="document.getElementById('notifDrawer').classList.toggle('open')">
+        🔔
+        <span class="notif-dot"></span>
+      </button>
+
+      <button class="avatar-btn" onclick="document.getElementById('signInModal').classList.add('open')">QA</button>
+    </div>
+  </header>
+
+  <!-- ════ SIDEBAR ════ -->
+  <aside>
+    <div class="nav-section"><div class="nav-section-label">Core</div></div>
+    <div class="nav-item active" onclick="showPage('dashboard', this)">
+      <span class="nav-icon">⬡</span> Dashboard
+      <span class="nav-badge live">LIVE</span>
+    </div>
+    <div class="nav-item" onclick="showPage('generator', this)">
+      <span class="nav-icon">✦</span> AI Test Generator
+    </div>
+    <div class="nav-item" onclick="showPage('crawler', this)">
+      <span class="nav-icon">◎</span> URL Crawler
+      <span class="nav-badge new">NEW</span>
+    </div>
+    <div class="nav-item" onclick="showPage('executor', this)">
+      <span class="nav-icon">▶</span> Test Executor
+    </div>
+
+    <div class="nav-section"><div class="nav-section-label">Analysis</div></div>
+    <div class="nav-item" onclick="showPage('security', this)">
+      <span class="nav-icon">🛡</span> Security Scanner
+      <span class="nav-badge fail">3</span>
+    </div>
+    <div class="nav-item" onclick="showPage('network', this)">
+      <span class="nav-icon">⋈</span> Network Monitor
+    </div>
+    <div class="nav-item" onclick="showPage('visual', this)">
+      <span class="nav-icon">◉</span> Visual Testing
+    </div>
+    <div class="nav-item" onclick="showPage('performance', this)">
+      <span class="nav-icon">⚡</span> Performance
+    </div>
+
+    <div class="nav-section"><div class="nav-section-label">Intelligence</div></div>
+    <div class="nav-item" onclick="showPage('healer', this)">
+      <span class="nav-icon">⟳</span> Locator Healer
+    </div>
+    <div class="nav-item" onclick="showPage('reports', this)">
+      <span class="nav-icon">▦</span> Reports
+    </div>
+    <div class="nav-item" onclick="showPage('scheduler', this)">
+      <span class="nav-icon">◷</span> Scheduler
+    </div>
+
+    <div class="nav-section"><div class="nav-section-label">Config</div></div>
+    <div class="nav-item" onclick="showPage('devices', this)">
+      <span class="nav-icon">⊞</span> Devices
+    </div>
+    <div class="nav-item" onclick="showPage('settings', this)">
+      <span class="nav-icon">◈</span> Settings
+    </div>
+
+    <div class="sidebar-footer">
+      <div class="system-health">
+        <div style="font-size:10px;font-weight:700;letter-spacing:1px;color:var(--text-md);margin-bottom:8px">SYSTEM STATUS</div>
+        <div class="health-row"><span class="health-label">AI Core</span><div class="health-dot ok"></div></div>
+        <div class="health-row"><span class="health-label">LLM Engine</span><div class="health-dot ok"></div></div>
+        <div class="health-row"><span class="health-label">Crawler</span><div class="health-dot ok"></div></div>
+        <div class="health-row"><span class="health-label">Executor</span><div class="health-dot warn"></div></div>
+        <div class="health-row" style="margin-bottom:0"><span class="health-label">Reporter</span><div class="health-dot ok"></div></div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- ════ MAIN ════ -->
+  <main>
+
+    <!-- ─── PAGE: DASHBOARD ─── -->
+    <div class="page active" id="page-dashboard">
+      <div class="page-header">
+        <div style="display:flex;align-items:center;justify-content:space-between">
+          <div>
+            <div class="page-title">Mission Control <span style="font-size:14px;color:var(--text-lo)">/ Dashboard</span></div>
+            <div class="page-sub">Real-time AI testing intelligence — all agents online</div>
+          </div>
+          <div style="display:flex;gap:8px">
+            <button class="btn btn-ghost btn-sm">⟳ Refresh</button>
+            <button class="btn btn-primary" onclick="showPage('generator',null)">+ Generate Tests</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Metrics -->
+      <div class="metric-grid">
+        <div class="metric-card" style="--m-color:var(--accent-cyan)">
+          <div class="m-icon">⚡</div>
+          <div class="m-label">Tests Run Today</div>
+          <div class="m-value" style="color:var(--accent-cyan)" id="mTests">2,847</div>
+          <div class="m-delta"><span class="up">↑ 12.4%</span> vs yesterday</div>
+        </div>
+        <div class="metric-card" style="--m-color:var(--pass)">
+          <div class="m-icon">✓</div>
+          <div class="m-label">Pass Rate</div>
+          <div class="m-value" style="color:var(--pass)" id="mPass">94.2%</div>
+          <div class="m-delta"><span class="up">↑ 2.1%</span> this week</div>
+        </div>
+        <div class="metric-card" style="--m-color:var(--fail)">
+          <div class="m-icon">✕</div>
+          <div class="m-label">Bugs Found</div>
+          <div class="m-value" style="color:var(--fail)" id="mBugs">163</div>
+          <div class="m-delta"><span class="dn">↑ 8 critical</span> today</div>
+        </div>
+        <div class="metric-card" style="--m-color:var(--accent-gold)">
+          <div class="m-icon">⏱</div>
+          <div class="m-label">URLs Crawled</div>
+          <div class="m-value" style="color:var(--accent-gold)" id="mUrls">18,492</div>
+          <div class="m-delta"><span class="up">↑ 3,200</span> this session</div>
+        </div>
+      </div>
+
+      <!-- AI Agents -->
+      <div class="card" style="margin-bottom:16px">
+        <div class="card-title">⚡ Live AI Agent Fleet</div>
+        <div class="agent-grid">
+          <div class="agent-card online" style="--a-color:var(--accent-cyan);--a-progress:0.85">
+            <div class="agent-icon">🧠</div>
+            <div class="agent-name">PLANNER</div>
+            <div class="agent-status-txt">Strategizing test suite</div>
+            <div class="agent-pulse"></div>
+          </div>
+          <div class="agent-card busy" style="--a-color:var(--warn);--a-progress:0.4">
+            <div class="agent-icon">✦</div>
+            <div class="agent-name">GENERATOR</div>
+            <div class="agent-status-txt">Generating 12 tests…</div>
+            <div class="agent-pulse busy"></div>
+          </div>
+          <div class="agent-card online" style="--a-color:var(--pass);--a-progress:0.92">
+            <div class="agent-icon">▶</div>
+            <div class="agent-name">EXECUTOR</div>
+            <div class="agent-status-txt">Running regression</div>
+            <div class="agent-pulse"></div>
+          </div>
+          <div class="agent-card online" style="--a-color:var(--accent-violet);--a-progress:0.7">
+            <div class="agent-icon">⟳</div>
+            <div class="agent-name">HEALER</div>
+            <div class="agent-status-txt">Monitoring locators</div>
+            <div class="agent-pulse"></div>
+          </div>
+          <div class="agent-card online" style="--a-color:var(--accent-blue);--a-progress:0.6">
+            <div class="agent-icon">◎</div>
+            <div class="agent-name">REPORTER</div>
+            <div class="agent-status-txt">Analyzing failures</div>
+            <div class="agent-pulse"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Charts + Table -->
+      <div class="grid-60-40" style="margin-bottom:16px">
+        <!-- Recent Runs Table -->
+        <div class="card">
+          <div class="card-title">Recent Test Runs</div>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr><th>Project</th><th>Framework</th><th>Tests</th><th>Pass</th><th>Status</th><th>Time</th></tr>
+              </thead>
+              <tbody>
+                <tr><td><span class="td-url">shop.example.com</span></td><td class="td-framework">Playwright</td><td>142</td><td><span style="color:var(--pass)">138</span></td><td><span class="badge badge-pass">PASS</span></td><td class="td-time">1.2m</td></tr>
+                <tr><td><span class="td-url">api.myapp.io/v2</span></td><td class="td-framework">PyTest</td><td>89</td><td><span style="color:var(--fail)">71</span></td><td><span class="badge badge-fail">FAIL</span></td><td class="td-time">34s</td></tr>
+                <tr><td><span class="td-url">dashboard.corp.net</span></td><td class="td-framework">Cypress</td><td>211</td><td><span style="color:var(--pass)">209</span></td><td><span class="badge badge-pass">PASS</span></td><td class="td-time">4.8m</td></tr>
+                <tr><td><span class="td-url">mobile.app/android</span></td><td class="td-framework">Appium</td><td>67</td><td><span style="color:var(--warn)">58</span></td><td><span class="badge badge-warn">WARN</span></td><td class="td-time">2.1m</td></tr>
+                <tr><td><span class="td-url">checkout.shop.io</span></td><td class="td-framework">Selenium</td><td>33</td><td><span style="color:var(--pass)">33</span></td><td><span class="badge badge-run">RUNNING</span></td><td class="td-time">—</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Pass/Fail Chart -->
+        <div class="card">
+          <div class="card-title">7-Day Pass Rate</div>
+          <div class="chart-bar-wrap" id="passChart"></div>
+          <div style="display:flex;justify-content:space-between;margin-top:6px;font-size:10px;color:var(--text-lo);font-family:'JetBrains Mono',monospace">
+            <span>Mon</span><span>Tue</span><span>Wed</span><span>Thu</span><span>Fri</span><span>Sat</span><span>Sun</span>
+          </div>
+          <div style="margin-top:16px">
+            <div style="display:flex;justify-content:space-between;font-size:11px;margin-bottom:6px">
+              <span style="color:var(--text-md)">Critical Bugs</span><span style="color:var(--fail)">8 open</span>
+            </div>
+            <div class="progress-bar"><div class="progress-fill" style="--p-color:var(--fail);width:32%"></div></div>
+            <div style="display:flex;justify-content:space-between;font-size:11px;margin:8px 0 6px">
+              <span style="color:var(--text-md)">Test Coverage</span><span style="color:var(--pass)">86%</span>
+            </div>
+            <div class="progress-bar"><div class="progress-fill" style="width:86%"></div></div>
+            <div style="display:flex;justify-content:space-between;font-size:11px;margin:8px 0 6px">
+              <span style="color:var(--text-md)">Locators Healed</span><span style="color:var(--accent-violet)">24</span>
+            </div>
+            <div class="progress-bar"><div class="progress-fill" style="--p-color:var(--accent-violet);width:67%"></div></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- AI Insights -->
+      <div class="card" style="margin-bottom:16px">
+        <div class="card-title">🧠 AI Insights</div>
+        <div class="grid-3">
+          <div class="insight-card">
+            <div class="insight-title">⚠️ Flaky Test Pattern</div>
+            <div class="insight-body">3 tests on <code style="color:var(--accent-cyan)">/checkout</code> fail intermittently due to race condition in payment gateway callback. Suggest adding explicit wait for <code style="color:var(--accent-cyan)">payment_complete</code> event.</div>
+          </div>
+          <div class="insight-card" style="border-color:rgba(255,45,120,0.2);background:linear-gradient(135deg,rgba(255,45,120,0.05),rgba(255,107,53,0.05))">
+            <div class="insight-title" style="color:var(--fail)">🔴 Critical DOM Change</div>
+            <div class="insight-body">Sign-in button selector <code style="color:var(--accent-gold)">#login-btn</code> changed to <code style="color:var(--accent-gold)">[data-action="login"]</code>. 12 tests affected. Auto-heal queued.</div>
+          </div>
+          <div class="insight-card" style="border-color:rgba(168,85,247,0.2);background:linear-gradient(135deg,rgba(168,85,247,0.05),rgba(77,124,254,0.05))">
+            <div class="insight-title" style="color:var(--accent-violet)">✦ Coverage Gap Found</div>
+            <div class="insight-body">User settings &amp; notification preferences pages have 0% test coverage. AI recommends generating 18 tests. Click to auto-generate.</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Terminal -->
+      <div class="card" style="margin-bottom:16px">
+        <div class="card-title" style="display:flex;align-items:center;justify-content:space-between">
+          <span>⬛ Live Terminal</span>
+          <div style="display:flex;gap:6px">
+            <button class="btn btn-ghost btn-sm" onclick="clearTerminal()">Clear</button>
+            <button class="btn btn-primary btn-sm" onclick="runDemo()">▶ Run Demo</button>
+          </div>
+        </div>
+        <div class="terminal" id="mainTerminal">
+          <span class="t-head">ΣIGMA Testing AI Agent v2.0.0</span><br>
+          <span class="t-dim">──────────────────────────────────────────</span><br>
+          <span class="t-cyan">✓</span> AI Core <span class="t-pass">online</span> · LLM: Groq LLaMA-3.1-70B<br>
+          <span class="t-cyan">✓</span> Crawler <span class="t-pass">online</span> · Playwright headless<br>
+          <span class="t-cyan">✓</span> Executor <span class="t-pass">online</span> · 4 workers available<br>
+          <span class="t-dim">──────────────────────────────────────────</span><br>
+          <span class="t-cyan">$</span> sigma status<br>
+          <span class="t-pass">✓</span> All 5 agents nominal<br>
+          <span class="t-cyan">$</span> sigma run --suite regression --parallel<br>
+          <span class="t-info">[INFO]</span> Discovered 247 tests across 12 files<br>
+          <span class="t-info">[INFO]</span> Spawning 4 parallel workers...<br>
+          <span class="t-pass">[PASS]</span> test_login.py::test_valid_credentials<br>
+          <span class="t-pass">[PASS]</span> test_checkout.py::test_add_to_cart<br>
+          <span class="t-fail">[FAIL]</span> test_payment.py::test_visa_3ds — ElementTimeout: #confirm-btn<br>
+          <span class="t-warn">[HEAL]</span> AI locator healer activated... found [data-id="confirm"] ✓<br>
+          <span class="t-pass">[PASS]</span> test_payment.py::test_visa_3ds [healed]<br>
+          <span class="t-info">[INFO]</span> Running security checks...<br>
+          <span class="t-fail">[VULN]</span> CRITICAL: XSS vulnerability at /search?q= — reflected input unsanitized<br>
+          <span class="t-pass">✓</span> Suite complete: <span class="t-pass">241 pass</span> · <span class="t-fail">6 fail</span> · <span class="t-warn">1 healed</span><br>
+          <span class="t-dim">Report generated: ./reports/regression_2025-01-15.html</span><br>
+          <span class="t-cyan">$</span> <span class="term-cursor"></span>
+        </div>
+        <div class="term-input-row">
+          <span class="term-prompt">sigma $</span>
+          <input class="term-input" id="termInput" placeholder="Enter command..." onkeydown="handleTermInput(event)">
+        </div>
+      </div>
+
+      <footer>
+        <div class="footer-top">
+          <div class="footer-brand">
+            <div class="logo-sigma">Σ SIGMA</div>
+            <div class="footer-tagline">The Alpha & Omega of AI-Powered Testing. Built for QA engineers who refuse to settle for broken systems.</div>
+            <div class="footer-social">
+              <a class="social-btn">𝕏</a>
+              <a class="social-btn">⌥</a>
+              <a class="social-btn">in</a>
+              <a class="social-btn">▶</a>
+              <a class="social-btn">◈</a>
+              <a class="social-btn" style="font-size:10px;font-weight:700">DEV</a>
+            </div>
+          </div>
+          <div>
+            <div class="footer-col-title">Product</div>
+            <a class="footer-link">Features</a>
+            <a class="footer-link">Pricing</a>
+            <a class="footer-link">Changelog</a>
+            <a class="footer-link">Roadmap</a>
+          </div>
+          <div>
+            <div class="footer-col-title">Resources</div>
+            <a class="footer-link">Documentation</a>
+            <a class="footer-link">API Reference</a>
+            <a class="footer-link">GitHub Repo</a>
+            <a class="footer-link">Community</a>
+          </div>
+          <div>
+            <div class="footer-col-title">Company</div>
+            <a class="footer-link">About Us</a>
+            <a class="footer-link">Blog</a>
+            <a class="footer-link">Careers</a>
+            <a class="footer-link">Contact</a>
+          </div>
+          <div>
+            <div class="footer-col-title">Legal</div>
+            <a class="footer-link">Privacy Policy</a>
+            <a class="footer-link">Terms</a>
+            <a class="footer-link">Cookie Policy</a>
+            <a class="footer-link">GDPR</a>
+          </div>
+        </div>
+        <div class="footer-bottom">
+          <span>© 2025 Sigma Testing AI Agent. Made with ❤️ for QA Engineers worldwide.</span>
+          <div class="footer-tech">
+            <span class="tech-pill">Next.js 15</span>
+            <span class="tech-pill">FastAPI</span>
+            <span class="tech-pill">LangChain</span>
+            <span class="tech-pill">LLaMA 3.1</span>
+            <span class="tech-pill">Playwright</span>
+          </div>
+        </div>
+      </footer>
+    </div>
+
+    <!-- ─── PAGE: AI TEST GENERATOR ─── -->
+    <div class="page" id="page-generator">
+      <div class="page-header">
+        <div class="page-title">✦ AI Test Generator</div>
+        <div class="page-sub">LLM-powered test generation — Playwright, Selenium, Cypress, Appium, REST</div>
+      </div>
+
+      <div class="grid-60-40">
+        <div>
+          <div class="card" style="margin-bottom:14px">
+            <div class="card-title">Target Configuration</div>
+            <div class="form-group">
+              <label class="form-label">Target URL</label>
+              <input class="form-input" type="url" placeholder="https://example.com/login" id="genUrl">
+            </div>
+            <div class="grid-2" style="gap:12px">
+              <div class="form-group">
+                <label class="form-label">Language</label>
+                <select class="form-select" id="genLang">
+                  <option>Python</option><option>JavaScript</option><option>TypeScript</option>
+                  <option>Java</option><option>C#</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label class="form-label">Framework</label>
+                <select class="form-select" id="genFramework">
+                  <option>Playwright</option><option>Selenium</option><option>Cypress</option>
+                  <option>Appium</option><option>Rest-Assured</option><option>PyTest</option>
+                </select>
+              </div>
+            </div>
+            <div class="grid-2" style="gap:12px">
+              <div class="form-group">
+                <label class="form-label">Test Type</label>
+                <select class="form-select">
+                  <option>UI / Functional</option><option>API</option><option>Performance</option>
+                  <option>Security</option><option>Visual Regression</option><option>Accessibility</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label class="form-label">Selector Strategy</label>
+                <select class="form-select">
+                  <option>getByRole</option><option>getByTestId</option><option>By.css</option>
+                  <option>By.xpath</option><option>getByText</option><option>getByLabel</option>
+                  <option>By.id</option><option>By.className</option>
+                </select>
+              </div>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Test Requirements (natural language)</label>
+              <textarea class="form-textarea" placeholder="Describe what to test: e.g. 'Test login with valid/invalid credentials, verify error messages, test remember me checkbox, ensure redirect to dashboard after login'"></textarea>
+            </div>
+          </div>
+
+          <div class="card" style="margin-bottom:14px">
+            <div class="card-title">Assertion Builder</div>
+            <div class="check-grid">
+              <label class="check-item"><input type="checkbox" checked> assertEqual</label>
+              <label class="check-item"><input type="checkbox" checked> assertVisible</label>
+              <label class="check-item"><input type="checkbox" checked> assertURL</label>
+              <label class="check-item"><input type="checkbox"> assertTitle</label>
+              <label class="check-item"><input type="checkbox" checked> assertText</label>
+              <label class="check-item"><input type="checkbox"> softAssert</label>
+              <label class="check-item"><input type="checkbox"> assertStatusCode</label>
+              <label class="check-item"><input type="checkbox" checked> assertNotNull</label>
+              <label class="check-item"><input type="checkbox"> assertResponseTime</label>
+            </div>
+          </div>
+
+          <div style="display:flex;gap:10px">
+            <button class="btn btn-primary btn-lg" onclick="generateTests()" style="flex:1">
+              <span id="genBtnText">✦ Generate with AI</span>
+            </button>
+            <button class="btn btn-ghost btn-lg" onclick="showPage('executor',null)">▶ Run Tests</button>
+          </div>
+        </div>
+
+        <div>
+          <div class="code-editor">
+            <div class="code-editor-header">
+              <div class="dots"><div class="dot r"></div><div class="dot y"></div><div class="dot g"></div></div>
+              <div class="code-editor-tabs">
+                <div class="editor-tab active">test_login.py</div>
+                <div class="editor-tab">test_checkout.py</div>
+              </div>
+              <button class="btn btn-ghost btn-sm" style="margin-left:auto" onclick="copyCode()">⎘ Copy</button>
+            </div>
+            <div class="code-body" id="codeOutput">
+<pre><span class="cmt"># ✦ Generated by Sigma AI Testing Agent</span>
+<span class="cmt"># Framework: Playwright · Language: Python</span>
+
+<span class="kw">import</span> pytest
+<span class="kw">from</span> <span class="cls">playwright.sync_api</span> <span class="kw">import</span> Page, expect
+
+<span class="kw">class</span> <span class="cls">TestLogin</span>:
+
+    <span class="kw">def</span> <span class="fn">test_valid_login</span>(<span class="cls">self</span>, page: <span class="cls">Page</span>):
+        <span class="cmt"># Navigate to login page</span>
+        page.<span class="fn">goto</span>(<span class="str">"https://example.com/login"</span>)
+        expect(page).<span class="fn">to_have_title</span>(<span class="str">"Login — Example"</span>)
+
+        <span class="cmt"># Fill credentials</span>
+        page.<span class="fn">get_by_label</span>(<span class="str">"Email"</span>).<span class="fn">fill</span>(<span class="str">"user@test.com"</span>)
+        page.<span class="fn">get_by_label</span>(<span class="str">"Password"</span>).<span class="fn">fill</span>(<span class="str">"Secure@123"</span>)
+        page.<span class="fn">get_by_role</span>(<span class="str">"button"</span>, name=<span class="str">"Sign In"</span>).<span class="fn">click</span>()
+
+        <span class="cmt"># Assert redirect to dashboard</span>
+        expect(page).<span class="fn">to_have_url</span>(<span class="str">"https://example.com/dashboard"</span>)
+        expect(page.<span class="fn">get_by_test_id</span>(<span class="str">"welcome-msg"</span>)).<span class="fn">to_be_visible</span>()
+
+    <span class="kw">def</span> <span class="fn">test_invalid_login</span>(<span class="cls">self</span>, page: <span class="cls">Page</span>):
+        page.<span class="fn">goto</span>(<span class="str">"https://example.com/login"</span>)
+        page.<span class="fn">get_by_label</span>(<span class="str">"Email"</span>).<span class="fn">fill</span>(<span class="str">"wrong@test.com"</span>)
+        page.<span class="fn">get_by_label</span>(<span class="str">"Password"</span>).<span class="fn">fill</span>(<span class="str">"wrongpass"</span>)
+        page.<span class="fn">get_by_role</span>(<span class="str">"button"</span>, name=<span class="str">"Sign In"</span>).<span class="fn">click</span>()
+
+        <span class="cmt"># Assert error message</span>
+        error = page.<span class="fn">get_by_role</span>(<span class="str">"alert"</span>)
+        expect(error).<span class="fn">to_be_visible</span>()
+        expect(error).<span class="fn">to_contain_text</span>(<span class="str">"Invalid credentials"</span>)
+
+    <span class="kw">def</span> <span class="fn">test_sql_injection</span>(<span class="cls">self</span>, page: <span class="cls">Page</span>):
+        <span class="cmt"># Security: SQL injection attempt</span>
+        page.<span class="fn">goto</span>(<span class="str">"https://example.com/login"</span>)
+        page.<span class="fn">get_by_label</span>(<span class="str">"Email"</span>).<span class="fn">fill</span>(<span class="str">"' OR 1=1 --"</span>)
+        page.<span class="fn">get_by_role</span>(<span class="str">"button"</span>, name=<span class="str">"Sign In"</span>).<span class="fn">click</span>()
+        expect(page).<span class="fn">not_to_have_url</span>(<span class="str">"*dashboard*"</span>)
+</pre>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ─── PAGE: SECURITY SCANNER ─── -->
+    <div class="page" id="page-security">
+      <div class="page-header">
+        <div class="page-title">🛡 Security Scanner</div>
+        <div class="page-sub">OWASP Top 10 · SQL Injection · XSS · CSRF · Auth Bypass · API Security</div>
+      </div>
+
+      <div class="card" style="margin-bottom:16px">
+        <div class="card-title">Scan Configuration</div>
+        <div style="display:flex;gap:10px;align-items:flex-end">
+          <div class="form-group" style="flex:1;margin:0">
+            <label class="form-label">Target URL</label>
+            <input class="form-input" value="https://example.com" id="secUrl">
+          </div>
+          <div class="form-group" style="margin:0">
+            <label class="form-label">Depth</label>
+            <select class="form-select" style="width:100px"><option>Full</option><option>Quick</option><option>API Only</option></select>
+          </div>
+          <button class="btn btn-danger btn-lg" onclick="runSecurityScan()">🛡 Start Attack Scan</button>
+        </div>
+      </div>
+
+      <!-- Scan Progress -->
+      <div class="card" style="margin-bottom:16px" id="secProgress" style="display:none">
+        <div class="card-title" style="display:flex;align-items:center;gap:8px">
+          <div class="spinner"></div>Scanning...
+        </div>
+        <div class="grid-3" style="gap:10px;margin-bottom:14px">
+          <div style="text-align:center;padding:12px;background:var(--bg-panel);border-radius:var(--radius-sm)">
+            <div style="font-size:22px;font-weight:700;color:var(--fail)" id="secCritCount">3</div>
+            <div style="font-size:10px;color:var(--text-md);letter-spacing:1px">CRITICAL</div>
+          </div>
+          <div style="text-align:center;padding:12px;background:var(--bg-panel);border-radius:var(--radius-sm)">
+            <div style="font-size:22px;font-weight:700;color:var(--fail)" id="secHighCount">7</div>
+            <div style="font-size:10px;color:var(--text-md);letter-spacing:1px">HIGH</div>
+          </div>
+          <div style="text-align:center;padding:12px;background:var(--bg-panel);border-radius:var(--radius-sm)">
+            <div style="font-size:22px;font-weight:700;color:var(--warn)" id="secMedCount">12</div>
+            <div style="font-size:10px;color:var(--text-md);letter-spacing:1px">MEDIUM</div>
+          </div>
+        </div>
+        <div class="progress-bar" style="height:8px"><div class="progress-fill" style="--p-color:var(--fail);width:78%"></div></div>
+        <div style="font-size:11px;color:var(--text-md);margin-top:6px">78% — Scanning auth endpoints...</div>
+      </div>
+
+      <!-- Vulnerabilities -->
+      <div class="card">
+        <div class="card-title">Vulnerabilities Detected</div>
+        <div class="vuln-item">
+          <div class="vuln-icon">💉</div>
+          <div style="flex:1">
+            <div class="vuln-title">SQL Injection <span class="sev-critical">[CRITICAL]</span></div>
+            <div class="vuln-desc">Parameter <code style="color:var(--accent-gold)">?user_id=</code> on <code style="color:var(--accent-cyan)">/api/users</code> is vulnerable to SQL injection. Payload <code style="color:var(--fail)">' OR '1'='1</code> returns all user records.</div>
+            <div class="vuln-meta"><span class="badge badge-fail">OWASP A03</span><span style="font-size:10px;color:var(--text-lo);font-family:JetBrains Mono">CVSS 9.8</span><button class="btn btn-ghost btn-sm">View POC</button><button class="btn btn-primary btn-sm">Generate Fix Test</button></div>
+          </div>
+        </div>
+        <div class="vuln-item">
+          <div class="vuln-icon">⚡</div>
+          <div style="flex:1">
+            <div class="vuln-title">Reflected XSS <span class="sev-critical">[CRITICAL]</span></div>
+            <div class="vuln-desc">Search endpoint <code style="color:var(--accent-cyan)">/search?q=</code> reflects user input unsanitized into DOM. Script tag execution confirmed: <code style="color:var(--fail)">&lt;script&gt;alert(1)&lt;/script&gt;</code></div>
+            <div class="vuln-meta"><span class="badge badge-fail">OWASP A03</span><span style="font-size:10px;color:var(--text-lo);font-family:JetBrains Mono">CVSS 8.8</span><button class="btn btn-ghost btn-sm">View POC</button><button class="btn btn-primary btn-sm">Generate Fix Test</button></div>
+          </div>
+        </div>
+        <div class="vuln-item">
+          <div class="vuln-icon">🔓</div>
+          <div style="flex:1">
+            <div class="vuln-title">Broken Authentication <span class="sev-high">[HIGH]</span></div>
+            <div class="vuln-desc">JWT token missing expiry (<code style="color:var(--accent-gold)">exp</code> claim absent). Tokens never expire. User sessions remain valid indefinitely after logout.</div>
+            <div class="vuln-meta"><span class="badge badge-fail">OWASP A07</span><span style="font-size:10px;color:var(--text-lo);font-family:JetBrains Mono">CVSS 7.5</span><button class="btn btn-ghost btn-sm">View POC</button><button class="btn btn-primary btn-sm">Generate Fix Test</button></div>
+          </div>
+        </div>
+        <div class="vuln-item">
+          <div class="vuln-icon">🌐</div>
+          <div style="flex:1">
+            <div class="vuln-title">CORS Misconfiguration <span class="sev-high">[HIGH]</span></div>
+            <div class="vuln-desc"><code style="color:var(--accent-cyan)">Access-Control-Allow-Origin: *</code> with credentials enabled. Any origin can read authenticated API responses.</div>
+            <div class="vuln-meta"><span class="badge badge-warn">OWASP A05</span><span style="font-size:10px;color:var(--text-lo);font-family:JetBrains Mono">CVSS 7.1</span><button class="btn btn-ghost btn-sm">View POC</button></div>
+          </div>
+        </div>
+        <div class="vuln-item">
+          <div class="vuln-icon">📁</div>
+          <div style="flex:1">
+            <div class="vuln-title">Sensitive Data Exposure <span class="sev-medium">[MEDIUM]</span></div>
+            <div class="vuln-desc"><code style="color:var(--accent-cyan)">/api/users</code> response includes raw password hashes and API keys in JSON payload. No field-level filtering applied.</div>
+            <div class="vuln-meta"><span class="badge badge-warn">OWASP A02</span><span style="font-size:10px;color:var(--text-lo);font-family:JetBrains Mono">CVSS 6.5</span><button class="btn btn-ghost btn-sm">View POC</button></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ─── PAGE: CRAWLER ─── -->
+    <div class="page" id="page-crawler">
+      <div class="page-header">
+        <div class="page-title">◎ URL Crawler & Validator</div>
+        <div class="page-sub">Crawl any site — validate DOM, SEO, schema, ads, tracking, broken links</div>
+      </div>
+
+      <div class="card" style="margin-bottom:16px">
+        <div class="tab-bar">
+          <div class="tab active">🌐 Web URL</div>
+          <div class="tab">🗺 Sitemap</div>
+          <div class="tab">📄 CSV Upload</div>
+          <div class="tab">📊 Excel</div>
+          <div class="tab">📑 Google Sheets</div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Target URL</label>
+          <input class="form-input" value="https://example.com" placeholder="https://yoursite.com">
+        </div>
+        <div style="display:flex;gap:12px;margin-bottom:14px">
+          <div style="flex:1">
+            <label class="form-label">Crawl Depth</label>
+            <select class="form-select"><option>1</option><option selected>3</option><option>5</option><option>All</option></select>
+          </div>
+          <div style="flex:1">
+            <label class="form-label">Max URLs</label>
+            <input class="form-input" value="500">
+          </div>
+          <div style="flex:1">
+            <label class="form-label">Concurrency</label>
+            <select class="form-select"><option>5</option><option selected>10</option><option>20</option></select>
+          </div>
+        </div>
+        <div class="card-title" style="margin-bottom:10px">Validation Checks</div>
+        <div class="check-grid">
+          <label class="check-item"><input type="checkbox" checked> All href URLs</label>
+          <label class="check-item"><input type="checkbox" checked> Broken links (4xx/5xx)</label>
+          <label class="check-item"><input type="checkbox" checked> Image alt text</label>
+          <label class="check-item"><input type="checkbox" checked> GA-4 tracking tag</label>
+          <label class="check-item"><input type="checkbox" checked> Schema markup (JSON-LD)</label>
+          <label class="check-item"><input type="checkbox" checked> Meta tags (OG/Twitter)</label>
+          <label class="check-item"><input type="checkbox"> Canonical tags</label>
+          <label class="check-item"><input type="checkbox" checked> Core Web Vitals</label>
+          <label class="check-item"><input type="checkbox"> Comscore tag</label>
+          <label class="check-item"><input type="checkbox"> GPT.js (Google Ads)</label>
+          <label class="check-item"><input type="checkbox"> Ad unit IDs</label>
+          <label class="check-item"><input type="checkbox" checked> JS console errors</label>
+          <label class="check-item"><input type="checkbox" checked> WCAG Accessibility</label>
+          <label class="check-item"><input type="checkbox"> Lazy load detection</label>
+          <label class="check-item"><input type="checkbox" checked> Redirections (301/302)</label>
+        </div>
+        <div style="margin-top:16px;display:flex;gap:10px">
+          <button class="btn btn-primary btn-lg" onclick="startCrawl()" style="flex:1">◎ Start Crawl</button>
+          <button class="btn btn-ghost btn-lg">⬇ Export CSV</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">Crawl Results — 247 URLs Processed</div>
+        <div style="background:var(--bg-panel);border-radius:var(--radius-sm);overflow:hidden;margin-bottom:12px">
+          <div style="display:grid;grid-template-columns:30px 1fr 80px 80px 80px;gap:10px;padding:8px 12px;background:var(--bg-card);font-size:9px;font-weight:700;letter-spacing:1.5px;color:var(--text-lo);text-transform:uppercase;border-bottom:1px solid var(--border)">
+            <div>✓</div><div>URL</div><div>Status</div><div>Issues</div><div>Time</div>
+          </div>
+          <div class="crawl-result-row"><div class="crawl-check">✓</div><div class="td-url">/</div><div><span class="badge badge-pass">200</span></div><div style="color:var(--pass)">0</div><div class="td-time">0.8s</div></div>
+          <div class="crawl-result-row"><div class="crawl-check">✓</div><div class="td-url">/about</div><div><span class="badge badge-pass">200</span></div><div style="color:var(--warn)">2</div><div class="td-time">1.1s</div></div>
+          <div class="crawl-result-row"><div class="crawl-fail">✕</div><div class="td-url">/products/old-item</div><div><span class="badge badge-fail">404</span></div><div style="color:var(--fail)">1</div><div class="td-time">0.3s</div></div>
+          <div class="crawl-result-row"><div class="crawl-check">✓</div><div class="td-url">/contact</div><div><span class="badge badge-pass">200</span></div><div style="color:var(--pass)">0</div><div class="td-time">0.9s</div></div>
+          <div class="crawl-result-row"><div class="crawl-fail">!</div><div class="td-url">/blog/post-1</div><div><span class="badge badge-warn">301</span></div><div style="color:var(--warn)">3</div><div class="td-time">1.4s</div></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ─── PAGE: NETWORK MONITOR ─── -->
+    <div class="page" id="page-network">
+      <div class="page-header">
+        <div class="page-title">⋈ Network Monitor</div>
+        <div class="page-sub">Intercept, analyze and validate all network requests</div>
+      </div>
+
+      <div class="card" style="margin-bottom:16px">
+        <div class="card-title">Script Filter</div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px">
+          <button class="btn btn-primary btn-sm">All</button>
+          <button class="btn btn-ghost btn-sm">gtm.js</button>
+          <button class="btn btn-ghost btn-sm">ga4</button>
+          <button class="btn btn-ghost btn-sm">gpt.js</button>
+          <button class="btn btn-ghost btn-sm">comscore</button>
+          <button class="btn btn-ghost btn-sm">fbevents</button>
+          <button class="btn btn-ghost btn-sm">clarity.js</button>
+          <button class="btn btn-ghost btn-sm">axe.js</button>
+          <button class="btn btn-ghost btn-sm">Custom...</button>
+        </div>
+        <div style="display:flex;gap:8px">
+          <input class="form-input" value="https://example.com" style="flex:1">
+          <button class="btn btn-primary">⋈ Monitor</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">Network Log — Live</div>
+        <div style="background:var(--bg-panel);border-radius:var(--radius-sm);overflow:hidden">
+          <div style="display:grid;grid-template-columns:60px 80px 1fr 80px 80px 80px;gap:12px;padding:8px 12px;background:var(--bg-card);font-size:9px;font-weight:700;letter-spacing:1.5px;color:var(--text-lo);text-transform:uppercase;border-bottom:1px solid var(--border)">
+            <div>Method</div><div>Status</div><div>URL</div><div>Type</div><div>Size</div><div>Time</div>
+          </div>
+          <div class="net-row"><span class="net-method-get">GET</span><span class="net-status-ok">200</span><span class="td-url">/api/users/profile</span><span style="color:var(--text-md)">fetch</span><span style="color:var(--text-md)">4.2KB</span><span class="td-time">142ms</span></div>
+          <div class="net-row"><span class="net-method-post">POST</span><span class="net-status-ok">201</span><span class="td-url">/api/auth/login</span><span style="color:var(--text-md)">xhr</span><span style="color:var(--text-md)">1.1KB</span><span class="td-time">380ms</span></div>
+          <div class="net-row"><span class="net-method-get">GET</span><span class="net-status-err">404</span><span class="td-url">/api/v2/products/99999</span><span style="color:var(--text-md)">fetch</span><span style="color:var(--text-md)">0.3KB</span><span class="td-time">28ms</span></div>
+          <div class="net-row"><span class="net-method-put">PUT</span><span class="net-status-ok">200</span><span class="td-url">/api/cart/item/12</span><span style="color:var(--text-md)">fetch</span><span style="color:var(--text-md)">2.8KB</span><span class="td-time">211ms</span></div>
+          <div class="net-row"><span class="net-method-get">GET</span><span class="net-status-redir">301</span><span class="td-url">/old/checkout →</span><span style="color:var(--text-md)">nav</span><span style="color:var(--text-md)">0.1KB</span><span class="td-time">12ms</span></div>
+          <div class="net-row"><span class="net-method-del">DEL</span><span class="net-status-err">403</span><span class="td-url">/api/admin/users/1</span><span style="color:var(--text-md)">fetch</span><span style="color:var(--text-md)">0.4KB</span><span class="td-time">67ms</span></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ─── PAGE: VISUAL TESTING ─── -->
+    <div class="page" id="page-visual">
+      <div class="page-header">
+        <div class="page-title">◉ Visual Regression Testing</div>
+        <div class="page-sub">AI-powered pixel comparison — detect layout shifts, style changes, rendering bugs</div>
+      </div>
+      <div class="card" style="margin-bottom:16px">
+        <div class="card-title">Comparison Run</div>
+        <div class="grid-2" style="gap:12px;margin-bottom:14px">
+          <div><label class="form-label">Baseline URL</label><input class="form-input" value="https://staging.example.com"></div>
+          <div><label class="form-label">Candidate URL</label><input class="form-input" value="https://prod.example.com"></div>
+        </div>
+        <div style="display:flex;gap:10px">
+          <button class="btn btn-primary btn-lg" style="flex:1" onclick="runVisual()">◉ Run Visual Diff</button>
+          <button class="btn btn-ghost btn-lg">📋 Set New Baseline</button>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-title">Visual Diff Results — 3 Changes Detected</div>
+        <div class="visual-diff" style="margin-bottom:16px">
+          <div class="diff-panel">
+            <div class="diff-label">BASELINE</div>
+            <div class="diff-img-placeholder">🖼</div>
+          </div>
+          <div class="diff-panel">
+            <div class="diff-label" style="background:rgba(255,45,120,0.15);color:var(--fail)">CANDIDATE — 3 CHANGES</div>
+            <div class="diff-img-placeholder" style="background:rgba(255,45,120,0.06);border-color:rgba(255,45,120,0.3)">⚠️</div>
+          </div>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:8px">
+          <div style="display:flex;align-items:center;justify-content:space-between;padding:10px;background:rgba(255,45,120,0.08);border:1px solid rgba(255,45,120,0.2);border-radius:var(--radius-sm)">
+            <div><div style="font-size:12px;font-weight:600;color:var(--fail)">Header height changed</div><div style="font-size:11px;color:var(--text-md)">64px → 72px — nav layout shift detected</div></div>
+            <span class="badge badge-fail">High</span>
+          </div>
+          <div style="display:flex;align-items:center;justify-content:space-between;padding:10px;background:rgba(255,217,61,0.08);border:1px solid rgba(255,217,61,0.2);border-radius:var(--radius-sm)">
+            <div><div style="font-size:12px;font-weight:600;color:var(--warn)">Button color change</div><div style="font-size:11px;color:var(--text-md)">#2563EB → #1D4ED8 on CTA button</div></div>
+            <span class="badge badge-warn">Low</span>
+          </div>
+          <div style="display:flex;align-items:center;justify-content:space-between;padding:10px;background:rgba(255,45,120,0.08);border:1px solid rgba(255,45,120,0.2);border-radius:var(--radius-sm)">
+            <div><div style="font-size:12px;font-weight:600;color:var(--fail)">Missing hero image</div><div style="font-size:11px;color:var(--text-md)">/assets/hero.webp returns 404 in prod environment</div></div>
+            <span class="badge badge-fail">High</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ─── PAGE: PERFORMANCE ─── -->
+    <div class="page" id="page-performance">
+      <div class="page-header">
+        <div class="page-title">⚡ Performance Testing</div>
+        <div class="page-sub">Lighthouse · Core Web Vitals · k6 Load Testing · Resource analysis</div>
+      </div>
+      <div class="grid-2" style="margin-bottom:16px">
+        <div class="card">
+          <div class="card-title">Lighthouse Score</div>
+          <div class="perf-gauge">
+            <div class="gauge-item">
+              <div class="gauge-circle" style="--g-color:var(--pass);--g-pct:92%"><div class="gauge-inner" style="color:var(--pass)">92</div></div>
+              <div class="gauge-label">Performance</div>
+            </div>
+            <div class="gauge-item">
+              <div class="gauge-circle" style="--g-color:var(--warn);--g-pct:78%"><div class="gauge-inner" style="color:var(--warn)">78</div></div>
+              <div class="gauge-label">Accessibility</div>
+            </div>
+            <div class="gauge-item">
+              <div class="gauge-circle" style="--g-color:var(--pass);--g-pct:95%"><div class="gauge-inner" style="color:var(--pass)">95</div></div>
+              <div class="gauge-label">Best Practices</div>
+            </div>
+            <div class="gauge-item">
+              <div class="gauge-circle" style="--g-color:var(--fail);--g-pct:61%"><div class="gauge-inner" style="color:var(--fail)">61</div></div>
+              <div class="gauge-label">SEO</div>
+            </div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-title">Core Web Vitals</div>
+          <div style="display:flex;flex-direction:column;gap:10px">
+            <div>
+              <div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:5px"><span>LCP (Largest Contentful Paint)</span><span style="color:var(--pass);font-family:JetBrains Mono">1.8s ✓</span></div>
+              <div class="progress-bar"><div class="progress-fill" style="width:70%"></div></div>
+            </div>
+            <div>
+              <div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:5px"><span>FID (First Input Delay)</span><span style="color:var(--warn);font-family:JetBrains Mono">120ms ⚠</span></div>
+              <div class="progress-bar"><div class="progress-fill" style="--p-color:var(--warn);width:48%"></div></div>
+            </div>
+            <div>
+              <div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:5px"><span>CLS (Cumulative Layout Shift)</span><span style="color:var(--fail);font-family:JetBrains Mono">0.31 ✕</span></div>
+              <div class="progress-bar"><div class="progress-fill" style="--p-color:var(--fail);width:31%"></div></div>
+            </div>
+            <div>
+              <div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:5px"><span>TTFB (Time to First Byte)</span><span style="color:var(--pass);font-family:JetBrains Mono">210ms ✓</span></div>
+              <div class="progress-bar"><div class="progress-fill" style="width:85%"></div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-title">k6 Load Test Results</div>
+        <div class="metric-grid" style="grid-template-columns:repeat(4,1fr)">
+          <div style="text-align:center;padding:12px;background:var(--bg-panel);border-radius:var(--radius-sm)">
+            <div style="font-size:24px;font-weight:700;color:var(--accent-cyan);font-family:JetBrains Mono">1,247</div>
+            <div style="font-size:10px;color:var(--text-md);margin-top:4px">Virtual Users</div>
+          </div>
+          <div style="text-align:center;padding:12px;background:var(--bg-panel);border-radius:var(--radius-sm)">
+            <div style="font-size:24px;font-weight:700;color:var(--pass);font-family:JetBrains Mono">842/s</div>
+            <div style="font-size:10px;color:var(--text-md);margin-top:4px">Requests/sec</div>
+          </div>
+          <div style="text-align:center;padding:12px;background:var(--bg-panel);border-radius:var(--radius-sm)">
+            <div style="font-size:24px;font-weight:700;color:var(--warn);font-family:JetBrains Mono">342ms</div>
+            <div style="font-size:10px;color:var(--text-md);margin-top:4px">Avg Response</div>
+          </div>
+          <div style="text-align:center;padding:12px;background:var(--bg-panel);border-radius:var(--radius-sm)">
+            <div style="font-size:24px;font-weight:700;color:var(--fail);font-family:JetBrains Mono">2.3%</div>
+            <div style="font-size:10px;color:var(--text-md);margin-top:4px">Error Rate</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ─── PAGE: LOCATOR HEALER ─── -->
+    <div class="page" id="page-healer">
+      <div class="page-header">
+        <div class="page-title">⟳ AI Locator Healer</div>
+        <div class="page-sub">Self-healing test locators powered by vector similarity + LLM intelligence</div>
+      </div>
+      <div class="grid-2" style="margin-bottom:16px">
+        <div class="card">
+          <div class="card-title">Broken Locator Input</div>
+          <div class="form-group">
+            <label class="form-label">Broken Selector</label>
+            <input class="form-input" value="#submit-btn" id="healLocator">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Selector Type</label>
+            <select class="form-select">
+              <option>CSS Selector</option><option>XPath</option><option>By.id</option>
+              <option>getByRole</option><option>getByTestId</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">DOM Snapshot (paste HTML)</label>
+            <textarea class="form-textarea" placeholder="Paste relevant HTML snippet here..." style="height:120px;font-family:JetBrains Mono;font-size:11px">&lt;button class="btn-primary submit-action" data-testid="form-submit" data-action="submit" aria-label="Submit form"&gt;Submit&lt;/button&gt;</textarea>
+          </div>
+          <button class="btn btn-primary btn-lg" style="width:100%" onclick="healLocator()">⟳ Heal with AI</button>
+        </div>
+        <div class="card" id="healResults">
+          <div class="card-title">AI Healing Results</div>
+          <div style="display:flex;flex-direction:column;gap:8px">
+            <div style="padding:12px;background:rgba(0,245,160,0.08);border:1px solid rgba(0,245,160,0.25);border-radius:var(--radius-sm)">
+              <div style="display:flex;justify-content:space-between;margin-bottom:4px"><span style="font-size:12px;font-weight:700;color:var(--pass)">🥇 Best Match</span><span style="font-size:11px;color:var(--pass);font-family:JetBrains Mono">99%</span></div>
+              <code style="color:var(--accent-gold);font-family:JetBrains Mono;font-size:12px">[data-testid="form-submit"]</code>
+              <div style="font-size:10px;color:var(--text-md);margin-top:4px">Stable attribute — highly recommended for test resilience</div>
+            </div>
+            <div style="padding:10px;background:var(--bg-panel);border:1px solid var(--border);border-radius:var(--radius-sm)">
+              <div style="display:flex;justify-content:space-between;margin-bottom:4px"><span style="font-size:11px;font-weight:600">Match #2</span><span style="font-size:11px;color:var(--accent-cyan);font-family:JetBrains Mono">94%</span></div>
+              <code style="color:var(--text-hi);font-family:JetBrains Mono;font-size:12px">[data-action="submit"]</code>
+            </div>
+            <div style="padding:10px;background:var(--bg-panel);border:1px solid var(--border);border-radius:var(--radius-sm)">
+              <div style="display:flex;justify-content:space-between;margin-bottom:4px"><span style="font-size:11px;font-weight:600">Match #3</span><span style="font-size:11px;color:var(--text-md);font-family:JetBrains Mono">87%</span></div>
+              <code style="color:var(--text-hi);font-family:JetBrains Mono;font-size:12px">getByRole("button", {name:"Submit form"})</code>
+            </div>
+            <div style="padding:10px;background:var(--bg-panel);border:1px solid var(--border);border-radius:var(--radius-sm)">
+              <div style="display:flex;justify-content:space-between;margin-bottom:4px"><span style="font-size:11px;font-weight:600">Match #4</span><span style="font-size:11px;color:var(--text-lo);font-family:JetBrains Mono">72%</span></div>
+              <code style="color:var(--text-hi);font-family:JetBrains Mono;font-size:12px">.btn-primary.submit-action</code>
+            </div>
+            <button class="btn btn-primary" style="margin-top:6px">✓ Apply Best Match</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ─── PAGE: REPORTS ─── -->
+    <div class="page" id="page-reports">
+      <div class="page-header">
+        <div class="page-title">▦ Reports & Analytics</div>
+        <div class="page-sub">AI-analyzed test reports — share via email, Slack, WhatsApp</div>
+      </div>
+      <div class="card" style="margin-bottom:16px">
+        <div class="card-title">Recent Reports</div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Report</th><th>Date</th><th>Tests</th><th>Pass Rate</th><th>Bugs</th><th>Actions</th></tr></thead>
+            <tbody>
+              <tr>
+                <td style="font-weight:600">Regression Suite — Daily</td>
+                <td class="td-time">Today 09:00</td>
+                <td>247</td>
+                <td><span style="color:var(--pass)">94.7%</span></td>
+                <td><span style="color:var(--fail)">13</span></td>
+                <td><button class="btn btn-ghost btn-sm" onclick="shareReport()">Share</button> <button class="btn btn-primary btn-sm">View</button></td>
+              </tr>
+              <tr>
+                <td style="font-weight:600">API Health Check</td>
+                <td class="td-time">Yesterday</td>
+                <td>89</td>
+                <td><span style="color:var(--warn)">88.8%</span></td>
+                <td><span style="color:var(--warn)">10</span></td>
+                <td><button class="btn btn-ghost btn-sm">Share</button> <button class="btn btn-primary btn-sm">View</button></td>
+              </tr>
+              <tr>
+                <td style="font-weight:600">Security Audit</td>
+                <td class="td-time">Jan 14</td>
+                <td>—</td>
+                <td>—</td>
+                <td><span style="color:var(--fail)">22</span></td>
+                <td><button class="btn btn-ghost btn-sm">Share</button> <button class="btn btn-danger btn-sm">CRITICAL</button></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ─── PAGE: SCHEDULER ─── -->
+    <div class="page" id="page-scheduler">
+      <div class="page-header">
+        <div class="page-title">◷ Test Scheduler</div>
+        <div class="page-sub">Schedule automated runs with cron, email reports, CI/CD integration</div>
+      </div>
+      <div class="card">
+        <div class="card-title">Create Schedule</div>
+        <div class="grid-2" style="gap:12px">
+          <div class="form-group"><label class="form-label">Job Name</label><input class="form-input" value="Daily Regression"></div>
+          <div class="form-group"><label class="form-label">Timezone</label><select class="form-select"><option>Asia/Kolkata (IST)</option><option>UTC</option><option>America/New_York</option></select></div>
+          <div class="form-group"><label class="form-label">Cron Expression</label><input class="form-input" value="0 9 * * 1-5" style="font-family:JetBrains Mono"><div style="font-size:10px;color:var(--text-md);margin-top:4px">Weekdays at 9:00 AM IST</div></div>
+          <div class="form-group"><label class="form-label">Test Suite</label><select class="form-select"><option>Full Regression</option><option>Smoke Tests</option><option>API Tests</option></select></div>
+        </div>
+        <div class="form-group"><label class="form-label">Email Report To</label><input class="form-input" placeholder="team@company.com, manager@company.com"></div>
+        <button class="btn btn-primary btn-lg" style="width:100%">◷ Create Schedule</button>
+      </div>
+    </div>
+
+    <!-- ─── PAGE: DEVICES ─── -->
+    <div class="page" id="page-devices">
+      <div class="page-header">
+        <div class="page-title">⊞ Device Manager</div>
+        <div class="page-sub">Cross-browser, cross-device, cross-OS test matrix</div>
+      </div>
+      <div class="card" style="margin-bottom:16px">
+        <div class="card-title">Desktop Browsers</div>
+        <div class="device-grid">
+          <div class="device-card selected" onclick="toggleDevice(this)"><div class="device-icon">🌐</div><div class="device-name">Chrome 121</div><div class="device-spec">Windows 11 · 1920×1080</div></div>
+          <div class="device-card" onclick="toggleDevice(this)"><div class="device-icon">🦊</div><div class="device-name">Firefox 122</div><div class="device-spec">Ubuntu · 1920×1080</div></div>
+          <div class="device-card" onclick="toggleDevice(this)"><div class="device-icon">🧭</div><div class="device-name">Safari 17</div><div class="device-spec">macOS Sonoma</div></div>
+          <div class="device-card selected" onclick="toggleDevice(this)"><div class="device-icon">🔷</div><div class="device-name">Edge 121</div><div class="device-spec">Windows 11</div></div>
+        </div>
+      </div>
+      <div class="card" style="margin-bottom:16px">
+        <div class="card-title">Mobile Devices</div>
+        <div class="device-grid">
+          <div class="device-card selected" onclick="toggleDevice(this)"><div class="device-icon">📱</div><div class="device-name">iPhone 15 Pro</div><div class="device-spec">iOS 17 · 393×852</div></div>
+          <div class="device-card" onclick="toggleDevice(this)"><div class="device-icon">🤖</div><div class="device-name">Pixel 8</div><div class="device-spec">Android 14 · 412×915</div></div>
+          <div class="device-card" onclick="toggleDevice(this)"><div class="device-icon">📱</div><div class="device-name">Samsung S24</div><div class="device-spec">Android 14 · 360×780</div></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ─── PAGE: SETTINGS ─── -->
+    <div class="page" id="page-settings">
+      <div class="page-header">
+        <div class="page-title">◈ Settings</div>
+        <div class="page-sub">Configure AI providers, integrations, notifications</div>
+      </div>
+      <div class="card" style="margin-bottom:16px">
+        <div class="card-title">LLM Provider</div>
+        <div class="form-group">
+          <label class="form-label">Active Provider</label>
+          <select class="form-select">
+            <option>Groq (LLaMA 3.1 70B) — FREE</option>
+            <option>Ollama (Local LLaMA) — FREE</option>
+            <option>Google Gemini 1.5 Flash — FREE Tier</option>
+            <option>Anthropic Claude Sonnet</option>
+            <option>OpenAI GPT-4o</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Groq API Key (Free at console.groq.com)</label>
+          <input class="form-input" type="password" placeholder="gsk_..." value="gsk_••••••••••••••••••">
+        </div>
+        <button class="btn btn-primary">Save & Test Connection</button>
+      </div>
+      <div class="card">
+        <div class="card-title">Integrations</div>
+        <div class="grid-2" style="gap:12px">
+          <div class="form-group"><label class="form-label">GitHub Repo</label><input class="form-input" placeholder="org/repo"></div>
+          <div class="form-group"><label class="form-label">Slack Webhook</label><input class="form-input" placeholder="https://hooks.slack.com/..."></div>
+          <div class="form-group"><label class="form-label">SMTP Email</label><input class="form-input" placeholder="smtp.gmail.com:587"></div>
+          <div class="form-group"><label class="form-label">SERP API Key (100 free/mo)</label><input class="form-input" type="password" placeholder="serpapi.com key"></div>
+        </div>
+        <button class="btn btn-primary">Save Settings</button>
+      </div>
+    </div>
+
+    <!-- ─── PAGE: TEST EXECUTOR ─── -->
+    <div class="page" id="page-executor">
+      <div class="page-header">
+        <div class="page-title">▶ Test Executor</div>
+        <div class="page-sub">Run tests across frameworks — parallel execution, live terminal output</div>
+      </div>
+      <div class="card" style="margin-bottom:16px">
+        <div class="grid-3" style="gap:12px">
+          <div class="form-group"><label class="form-label">Framework</label><select class="form-select"><option>Playwright</option><option>Selenium</option><option>Cypress</option><option>PyTest</option></select></div>
+          <div class="form-group"><label class="form-label">Workers</label><select class="form-select"><option>1</option><option>2</option><option selected>4</option><option>8</option></select></div>
+          <div class="form-group"><label class="form-label">Mode</label><select class="form-select"><option>Headless</option><option>Headed</option><option>Debug</option></select></div>
+        </div>
+        <div style="display:flex;gap:10px">
+          <button class="btn btn-primary btn-lg" style="flex:1" onclick="runTests()">▶ Run All Tests</button>
+          <button class="btn btn-ghost btn-lg">⏸ Pause</button>
+          <button class="btn btn-danger btn-lg">⏹ Stop</button>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-title" style="display:flex;justify-content:space-between">
+          <span>⬛ Execution Log</span>
+          <span style="font-size:11px;color:var(--text-md);font-family:JetBrains Mono"><span id="execPass" style="color:var(--pass)">0 pass</span> · <span id="execFail" style="color:var(--fail)">0 fail</span></span>
+        </div>
+        <div class="terminal" id="execTerminal">
+          <span class="t-dim">Ready. Click ▶ Run All Tests to start execution.</span><br>
+          <span class="t-cyan">$</span> <span class="term-cursor"></span>
+        </div>
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<!-- ══════════════════════════════════════════════════
+     AI CHAT WIDGET
+══════════════════════════════════════════════════ -->
+<div class="chat-widget">
+  <div class="chat-panel" id="chatPanel">
+    <div class="chat-header">
+      <span style="font-size:18px">🧠</span>
+      <div>
+        <div style="font-size:13px">Sigma AI</div>
+        <div style="font-size:10px;color:var(--pass)">● Online · Groq LLaMA</div>
+      </div>
+      <button class="btn btn-ghost btn-sm" style="margin-left:auto" onclick="toggleChat()">✕</button>
+    </div>
+    <div class="chat-messages" id="chatMessages">
+      <div class="chat-msg bot">Hey! I'm Sigma AI 🧠 Ask me to generate tests, analyze bugs, heal locators, or scan for security vulnerabilities.</div>
+    </div>
+    <div class="chat-input-row">
+      <input class="chat-input" id="chatInput" placeholder="Ask Sigma AI..." onkeydown="chatKeydown(event)">
+      <button class="chat-send" onclick="sendChatMsg()">Send</button>
+    </div>
+  </div>
+  <button class="chat-fab" onclick="toggleChat()">🧠</button>
+</div>
+
+<!-- ══════════════════════════════════════════════════
+     MODALS
+══════════════════════════════════════════════════ -->
+
+<!-- Subscribe Modal -->
+<div class="modal-overlay" id="subscribeModal" onclick="if(event.target===this)this.classList.remove('open')">
+  <div class="modal" style="position:relative">
+    <div class="modal-title">📧 Subscribe to Sigma AI</div>
+    <p style="font-size:13px;color:var(--text-md);margin-bottom:16px">Get notified about new features, AI model updates, and testing insights.</p>
+    <div class="form-group"><label class="form-label">Email Address</label><input class="form-input" type="email" placeholder="you@company.com"></div>
+    <button class="btn btn-primary" style="width:100%;margin-top:8px" onclick="document.getElementById('subscribeModal').classList.remove('open')">Subscribe →</button>
+    <button style="display:block;text-align:center;width:100%;margin-top:10px;background:none;border:none;color:var(--text-lo);cursor:pointer;font-size:12px" onclick="document.getElementById('subscribeModal').classList.remove('open')">No thanks</button>
+  </div>
+</div>
+
+<!-- Sign In Modal -->
+<div class="modal-overlay" id="signInModal" onclick="if(event.target===this)this.classList.remove('open')">
+  <div class="modal" style="position:relative">
+    <div class="modal-title">Sign In to Sigma AI</div>
+    <button class="btn btn-ghost" style="width:100%;margin-bottom:10px;justify-content:center;gap:10px" onclick="document.getElementById('signInModal').classList.remove('open')">
+      <span style="font-size:16px">G</span> Continue with Google
+    </button>
+    <button class="btn btn-ghost" style="width:100%;margin-bottom:16px;justify-content:center;gap:10px" onclick="document.getElementById('signInModal').classList.remove('open')">
+      <span style="font-size:16px">⌥</span> Continue with GitHub
+    </button>
+    <div style="text-align:center;font-size:11px;color:var(--text-lo);margin-bottom:14px">or sign in with email</div>
+    <div class="form-group"><label class="form-label">Email</label><input class="form-input" type="email" placeholder="you@company.com"></div>
+    <div class="form-group"><label class="form-label">Password</label><input class="form-input" type="password" placeholder="••••••••"></div>
+    <button class="btn btn-primary" style="width:100%" onclick="document.getElementById('signInModal').classList.remove('open')">Sign In →</button>
+    <div style="text-align:center;margin-top:12px;font-size:12px;color:var(--text-md)">No account? <a style="color:var(--accent-cyan);cursor:pointer">Sign up free</a></div>
+  </div>
+</div>
+
+<!-- Share Report Modal -->
+<div class="modal-overlay" id="shareModal" onclick="if(event.target===this)this.classList.remove('open')">
+  <div class="modal">
+    <div class="modal-title">📤 Share Report</div>
+    <div class="form-group"><label class="form-label">Email Recipients</label><input class="form-input" placeholder="team@company.com"></div>
+    <div style="display:flex;gap:10px;margin-bottom:14px">
+      <button class="btn btn-primary" style="flex:1">📧 Email (PDF)</button>
+      <button class="btn btn-ghost" style="flex:1">💬 Slack</button>
+      <button class="btn btn-ghost" style="flex:1">📱 WhatsApp</button>
+    </div>
+    <div class="form-group"><label class="form-label">Format</label>
+      <div style="display:flex;gap:8px">
+        <label class="check-item"><input type="checkbox" checked> HTML</label>
+        <label class="check-item"><input type="checkbox" checked> PDF</label>
+        <label class="check-item"><input type="checkbox"> JSON</label>
+        <label class="check-item"><input type="checkbox"> CSV</label>
+      </div>
+    </div>
+    <button class="btn btn-primary" style="width:100%" onclick="document.getElementById('shareModal').classList.remove('open')">Send Report</button>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════
+     JAVASCRIPT
+══════════════════════════════════════════════════ -->
+<script>
+// ─── LIVE CLOCK ───
+function updateClock() {
+  const now = new Date();
+  const ist = new Date(now.toLocaleString("en-US", {timeZone: "Asia/Kolkata"}));
+  const h = String(ist.getHours()).padStart(2,'0');
+  const m = String(ist.getMinutes()).padStart(2,'0');
+  const s = String(ist.getSeconds()).padStart(2,'0');
+  document.getElementById('liveClock').textContent = `${h}:${m}:${s} IST`;
+}
+setInterval(updateClock, 1000);
+updateClock();
+
+// ─── PAGE NAVIGATION ───
+function showPage(id, el) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  document.getElementById('page-' + id).classList.add('active');
+  if (el) el.classList.add('active');
+}
+
+// ─── CHART ───
+function buildChart() {
+  const vals = [82, 88, 79, 91, 87, 94, 92];
+  const colors = ['var(--accent-blue)','var(--accent-blue)','var(--fail)','var(--pass)','var(--accent-blue)','var(--pass)','var(--accent-cyan)'];
+  const wrap = document.getElementById('passChart');
+  if (!wrap) return;
+  wrap.innerHTML = '';
+  const max = Math.max(...vals);
+  vals.forEach((v,i) => {
+    const bar = document.createElement('div');
+    bar.className = 'chart-bar';
+    bar.style.cssText = `height:${(v/max)*100}%;--b-color:${colors[i]};--d:${i*0.08}s`;
+    bar.title = `${v}%`;
+    wrap.appendChild(bar);
+  });
+}
+buildChart();
+
+// ─── TERMINAL ───
+function clearTerminal() {
+  document.getElementById('mainTerminal').innerHTML = '<span class="t-cyan">$</span> <span class="term-cursor"></span>';
+}
+
+const demoLines = [
+  {cls:'t-cyan', txt:'$ sigma generate --url https://shop.example.com --framework playwright'},
+  {cls:'t-info', txt:'[AI] Analyzing DOM structure with LLaMA 3.1...'},
+  {cls:'t-info', txt:'[AI] Discovered 23 interactive elements'},
+  {cls:'t-info', txt:'[AI] Generating test scenarios...'},
+  {cls:'t-pass', txt:'✓ Generated test_add_to_cart.py (8 tests)'},
+  {cls:'t-pass', txt:'✓ Generated test_checkout_flow.py (12 tests)'},
+  {cls:'t-pass', txt:'✓ Generated test_product_search.py (6 tests)'},
+  {cls:'t-warn', txt:'⚠ Possible XSS at /search — adding security test'},
+  {cls:'t-pass', txt:'✓ Generated test_security.py (4 tests)'},
+  {cls:'t-cyan', txt:'$ sigma run --suite generated --parallel --workers 4'},
+  {cls:'t-info', txt:'[INFO] 30 tests | 4 workers | Playwright headless'},
+  {cls:'t-pass', txt:'[PASS] test_add_to_cart::test_add_single_item'},
+  {cls:'t-pass', txt:'[PASS] test_checkout_flow::test_guest_checkout'},
+  {cls:'t-fail', txt:'[FAIL] test_checkout_flow::test_promo_code — AssertionError: 20% off expected'},
+  {cls:'t-pass', txt:'[PASS] test_security::test_xss_search — SAFE ✓'},
+  {cls:'t-pass', txt:'[PASS] 28 tests | FAIL 2 | Coverage: 84%'},
+  {cls:'t-dim',  txt:'Report → ./reports/generated_run_2025.html'},
+];
+
+function runDemo() {
+  const term = document.getElementById('mainTerminal');
+  term.innerHTML = '';
+  let i = 0;
+  const interval = setInterval(() => {
+    if (i >= demoLines.length) { clearInterval(interval); term.innerHTML += '<span class="t-cyan">$ </span><span class="term-cursor"></span>'; return; }
+    const line = demoLines[i++];
+    term.innerHTML += `<span class="${line.cls}">${line.txt}</span><br>`;
+    term.scrollTop = term.scrollHeight;
+  }, 400);
+}
+
+function handleTermInput(e) {
+  if (e.key !== 'Enter') return;
+  const input = document.getElementById('termInput');
+  const cmd = input.value.trim();
+  if (!cmd) return;
+  const term = document.getElementById('mainTerminal');
+  term.innerHTML = term.innerHTML.replace('<span class="term-cursor"></span>','');
+  term.innerHTML += `<span class="t-cyan">sigma $</span> ${cmd}<br>`;
+  processCmd(cmd, term);
+  input.value = '';
+  term.scrollTop = term.scrollHeight;
+}
+
+function processCmd(cmd, term) {
+  const responses = {
+    'status': '<span class="t-pass">✓ All 5 agents: ONLINE</span><br><span class="t-dim">LLM: Groq LLaMA-3.1-70B | DB: PostgreSQL | Redis: OK</span>',
+    'help': '<span class="t-cyan">Commands:</span> status | generate | run | crawl | heal | debug | report | schedule',
+    'clear': '',
+  };
+  const r = responses[cmd.split(' ')[0]] || `<span class="t-dim">Running: ${cmd}...</span><br><span class="t-pass">✓ Done</span>`;
+  if (cmd === 'clear') { term.innerHTML = ''; }
+  else { term.innerHTML += r + '<br>'; }
+  term.innerHTML += '<span class="t-cyan">$ </span><span class="term-cursor"></span>';
+}
+
+// ─── GENERATE TESTS ───
+function generateTests() {
+  const btn = document.getElementById('genBtnText');
+  btn.innerHTML = '<span class="spinner" style="width:14px;height:14px;display:inline-block"></span> Generating...';
+  setTimeout(() => { btn.textContent = '✦ Generate with AI'; }, 2500);
+}
+
+function copyCode() {
+  navigator.clipboard?.writeText(document.getElementById('codeOutput').innerText).then(() => {
+    alert('Code copied!');
+  });
+}
+
+// ─── SECURITY SCAN ───
+function runSecurityScan() {
+  document.getElementById('secProgress').style.display = 'block';
+}
+
+// ─── VISUAL TEST ───
+function runVisual() {
+  const btn = event.target;
+  btn.textContent = '⟳ Comparing...';
+  setTimeout(() => { btn.textContent = '◉ Run Visual Diff'; }, 2000);
+}
+
+// ─── CRAWL ───
+function startCrawl() {
+  const btn = event.target;
+  btn.textContent = '⟳ Crawling...';
+  setTimeout(() => { btn.textContent = '◎ Start Crawl'; }, 3000);
+}
+
+// ─── HEAL ───
+function healLocator() {
+  const btn = event.target;
+  btn.textContent = '⟳ Healing...';
+  setTimeout(() => { btn.textContent = '⟳ Heal with AI'; }, 1500);
+}
+
+// ─── RUN TESTS (executor) ───
+let passCount = 0, failCount = 0;
+function runTests() {
+  const term = document.getElementById('execTerminal');
+  passCount = 0; failCount = 0;
+  term.innerHTML = '<span class="t-cyan">$ sigma run --suite all --parallel --workers 4</span><br>';
+  const lines = [
+    {cls:'t-info', txt:'[INFO] Discovering tests...'},
+    {cls:'t-info', txt:'[INFO] Found 30 tests | 4 workers'},
+    {cls:'t-pass', txt:'[PASS] test_login.py::test_valid_credentials', pass:true},
+    {cls:'t-pass', txt:'[PASS] test_register.py::test_email_validation', pass:true},
+    {cls:'t-fail', txt:'[FAIL] test_payment.py::test_3ds_redirect — Timeout', fail:true},
+    {cls:'t-pass', txt:'[PASS] test_cart.py::test_add_item', pass:true},
+    {cls:'t-warn', txt:'[HEAL] Locator #pay-btn broken — healed to [data-id="pay"]'},
+    {cls:'t-pass', txt:'[PASS] test_payment.py::test_3ds_redirect [healed]', pass:true},
+    {cls:'t-pass', txt:'[PASS] test_search.py::test_results_returned', pass:true},
+    {cls:'t-fail', txt:'[FAIL] test_api.py::test_rate_limiting — Expected 429', fail:true},
+    {cls:'t-pass', txt:'[PASS] test_checkout.py::test_guest_flow', pass:true},
+    {cls:'t-dim',  txt:'Suite complete. Report ready.'},
+  ];
+  let i = 0;
+  const iv = setInterval(() => {
+    if (i >= lines.length) {
+      clearInterval(iv);
+      term.innerHTML += '<span class="t-cyan">$ </span><span class="term-cursor"></span>';
+      return;
+    }
+    const l = lines[i++];
+    if (l.pass) passCount++;
+    if (l.fail) failCount++;
+    document.getElementById('execPass').textContent = passCount + ' pass';
+    document.getElementById('execFail').textContent = failCount + ' fail';
+    term.innerHTML += `<span class="${l.cls}">${l.txt}</span><br>`;
+    term.scrollTop = term.scrollHeight;
+  }, 500);
+}
+
+// ─── DEVICE TOGGLE ───
+function toggleDevice(card) {
+  card.classList.toggle('selected');
+}
+
+// ─── SHARE REPORT ───
+function shareReport() {
+  document.getElementById('shareModal').classList.add('open');
+}
+
+// ─── LIVE METRICS COUNTER ───
+function animateMetrics() {
+  const targets = {mTests: 2847, mBugs: 163, mUrls: 18492};
+  Object.entries(targets).forEach(([id, target]) => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    let curr = 0;
+    const step = target / 60;
+    const iv = setInterval(() => {
+      curr = Math.min(curr + step, target);
+      el.textContent = Math.round(curr).toLocaleString() + (id === 'mPass' ? '%' : '');
+      if (curr >= target) clearInterval(iv);
+    }, 20);
+  });
+}
+animateMetrics();
+
+// ─── AI CHAT ───
+function toggleChat() {
+  document.getElementById('chatPanel').classList.toggle('open');
+}
+
+const botReplies = [
+  "I detected 3 critical vulnerabilities on the login page. Want me to generate security test cases?",
+  "The checkout flow has a race condition in the payment callback. I recommend adding `waitForEvent('payment_complete')` before assertion.",
+  "I found 2 elements with broken locators. Running auto-heal with vector similarity... Done! Both fixed with 99% confidence.",
+  "Your test coverage is at 86%. I identified 14 untested user flows — want me to generate tests for them?",
+  "Performance analysis: LCP is 1.8s (good), but CLS is 0.31 (needs fix). The hero image section causes layout shift.",
+  "I crawled 247 URLs and found: 3 broken links, 12 missing alt tags, 2 pages without GA4 tag, 1 missing canonical.",
+];
+
+let botIdx = 0;
+function sendChatMsg() {
+  const input = document.getElementById('chatInput');
+  const msg = input.value.trim();
+  if (!msg) return;
+  const msgs = document.getElementById('chatMessages');
+  msgs.innerHTML += `<div class="chat-msg user">${msg}</div>`;
+  input.value = '';
+  setTimeout(() => {
+    const reply = botReplies[botIdx % botReplies.length];
+    botIdx++;
+    msgs.innerHTML += `<div class="chat-msg bot">${reply}</div>`;
+    msgs.scrollTop = msgs.scrollHeight;
+  }, 800);
+  msgs.scrollTop = msgs.scrollHeight;
+}
+
+function chatKeydown(e) {
+  if (e.key === 'Enter') sendChatMsg();
+}
+
+// ─── KEYBOARD SHORTCUT ───
+document.addEventListener('keydown', e => {
+  if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+    e.preventDefault();
+    document.querySelector('#globalSearch').focus();
+  }
+});
+
+// ─── AGENT PROGRESS ANIMATION ───
+setTimeout(() => {
+  document.querySelectorAll('.agent-card').forEach(c => {
+    c.style.setProperty('--a-progress', c.style.getPropertyValue('--a-progress') || '0.5');
+  });
+}, 100);
+
+// ─── FADE IN COUNTERS ───
+window.addEventListener('DOMContentLoaded', () => {
+  setTimeout(() => {
+    document.getElementById('mPass').textContent = '94.2%';
+  }, 1200);
+});
+</script>
+</body>
+</html>
