@@ -36,6 +36,7 @@ if %errorlevel% neq 0 (
 echo.
 echo [2/2] Starting the Sigma AI Backend Server...
 echo The dashboard will be accessible via browser once this is running.
-python backend\main.py
+cd backend
+uvicorn main:app --host 0.0.0.0 --port 8000 --reload
 
 pause

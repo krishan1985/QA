@@ -90,9 +90,33 @@ async def call_llm(prompt: str) -> str:
 # ──────────────────────────────────────────
 # ROUTES
 # ──────────────────────────────────────────
+import webbrowser
+import threading
+import time
+
+def open_browser():
+    time.sleep(1.5)
+    webbrowser.open("http://localhost:8000/")
+
+@app.on_event("startup")
+async def startup_event():
+    threading.Thread(target=open_browser, daemon=True).start()
+
+
+
+from fastapi.responses import Response, FileResponse
+
 @app.get("/")
 async def root():
+    if os.path.exists("../frontend/index.html"):
+        return FileResponse("../frontend/index.html")
     return {"status": "✅ Sigma AI Agent Online", "version": "2.0.0", "docs": "/docs"}
+
+@app.get("/favicon.ico", include_in_schema=False)
+async def favicon():
+    # Return empty 204 No Content to prevent 404 errors in standard browser requests
+    return Response(content=b"", media_type="image/x-icon", status_code=204)
+
 
 @app.get("/health")
 async def health():
